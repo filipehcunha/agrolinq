@@ -1,5 +1,6 @@
 # Engenharia de Software II - Projeto AgroLinq
 
+Conectamos pequenos produtores, restaurantes e consumidores em uma rede de agricultura mais justa e sustentável.
 
 ## Projeto Final
 
