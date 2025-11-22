@@ -12,7 +12,7 @@ export default defineConfig({
         trace: 'on-first-retry',
     },
 
-    /* Configure projects for major browsers */
+    /* Configurar projetos para os principais navegadores */
     projects: [
         {
             name: 'chromium',
@@ -20,11 +20,11 @@ export default defineConfig({
         },
     ],
 
-    /* Run your local dev server before starting the tests */
+    /* Rodar o servidor de desenvolvimento local antes de iniciar os testes */
     webServer: {
         command: 'npm run dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
-        timeout: 120 * 1000, // 2 minutes to start (Next.js can be slow on first compile)
+        timeout: 120 * 1000, // 2 minutos para iniciar (Next.js pode ser lento na primeira compilação)
     },
 });
