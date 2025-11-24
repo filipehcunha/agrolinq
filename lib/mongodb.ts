@@ -9,11 +9,23 @@ if (!MONGODB_URI) {
   );
 }
 
-let cached = (global as any).mongoose;
+type MongooseCache = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
+type GlobalWithMongoose = typeof globalThis & {
+  mongoose?: MongooseCache;
+};
+
+const globalWithMongoose = globalThis as GlobalWithMongoose;
+
+const cached: MongooseCache = globalWithMongoose.mongoose ?? {
+  conn: null,
+  promise: null,
+};
+
+globalWithMongoose.mongoose = cached;
 
 async function dbConnect() {
   if (cached.conn) {
@@ -25,10 +37,9 @@ async function dbConnect() {
       bufferCommands: false, // Desativa o buffer
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      return mongoose;
-    });
+    cached.promise = mongoose.connect(MONGODB_URI!, opts);
   }
+
   cached.conn = await cached.promise;
   return cached.conn;
 }
