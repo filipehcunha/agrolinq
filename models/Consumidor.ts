@@ -1,6 +1,5 @@
 // models/Consumidor.ts
 import mongoose, { Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 // 1. Define o Schema
 const ConsumidorSchema = new Schema({
