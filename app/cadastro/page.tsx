@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { ChangeEvent, CSSProperties, FocusEvent, HTMLInputTypeAttribute } from 'react';
 import { useState } from 'react';
 import { useForm, type FieldError, type UseFormRegister } from 'react-hook-form';
@@ -127,6 +128,8 @@ const FormInput = ({
 };
 
 export default function CadastroPage() {
+  const router = useRouter();
+
   const customResolver = useCallback(async (values: FormData) => {
     const result = formSchema.safeParse(values);
 
@@ -182,8 +185,12 @@ export default function CadastroPage() {
         return;
       }
 
+
       setIsError(false);
-      setMessage('Cadastro realizado com sucesso!');
+      setMessage('Cadastro realizado com sucesso! Redirecionando...');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1500);
     } catch (error: unknown) {
       setIsError(true);
       const fallbackMessage = error instanceof Error ? error.message : 'Ocorreu um erro inesperado.';
