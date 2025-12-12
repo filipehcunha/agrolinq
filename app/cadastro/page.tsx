@@ -1,8 +1,8 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useCallback } from 'react';
 import Image from 'next/image';
-import Link from 'next/link'; // Adicionando Link para o Header
+import Link from 'next/link';
 import type { ChangeEvent, CSSProperties, FocusEvent, HTMLInputTypeAttribute } from 'react';
 import { useState } from 'react';
 import { useForm, type FieldError, type UseFormRegister } from 'react-hook-form';
@@ -43,7 +43,6 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-
 type FormFieldName = keyof FormData;
 
 interface FormInputProps {
@@ -81,12 +80,12 @@ const FormInput = ({
   };
 
   const handleBlur = (event: FocusEvent<HTMLInputElement>) => {
-    Object.assign(event.target.style, FORM_FIELD_STYLE);
+    Object.assign(event.target.style, FORM_FIELD_STYLE as any);
     onBlur(event);
   };
 
   const handleFocus = (event: FocusEvent<HTMLInputElement>) => {
-    Object.assign(event.target.style, FOCUS_STYLE);
+    Object.assign(event.target.style, FOCUS_STYLE as any);
   };
 
   return (
@@ -103,6 +102,7 @@ const FormInput = ({
       >
         {label}
       </label>
+
       <input
         type={type}
         id={id}
@@ -116,6 +116,7 @@ const FormInput = ({
         placeholder={placeholder}
         maxLength={id === 'cpf' ? 14 : undefined}
       />
+
       {error && (
         <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: ERROR_COLOR }}>
           {error.message}
@@ -126,61 +127,73 @@ const FormInput = ({
 };
 
 export default function CadastroPage() {
+  const customResolver = useCallback(async (values: FormData) => {
+    const result = formSchema.safeParse(values);
+
+    if (result.success) {
+      return {
+        values: result.data,
+        errors: {},
+      };
+    }
+
+    return {
+      values: {},
+      errors: result.error.issues.reduce(
+        (allErrors, currentError) => ({
+          ...allErrors,
+          [currentError.path[0]]: {
+            type: currentError.code,
+            message: currentError.message,
+          },
+        }),
+        {}
+      ),
+    };
+  }, []);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: customResolver,
   });
 
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
-  // --- Função de Submissão ---
   const onSubmit = async (data: FormData) => {
-    console.log('1. --- FUNÇÃO ON SUBMIT INICIADA ---'); // <--- Adicione aqui!
-    console.log('Dados a serem enviados:', data); // <--- Adicione aqui!
-
     setMessage('');
     setIsError(false);
 
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
-      console.log('2. --- Requisição Enviada. Status:', response.status); // <--- Adicione aqui!
-
-      const responseData = await response.json();
+      const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         setIsError(true);
-        setMessage(responseData.error || 'Ocorreu um erro ao cadastrar.');
-      } else {
-        setIsError(false);
-        setMessage('Cadastro realizado com sucesso!');
-        // Opcional: Limpar o formulário ou redirecionar
+        setMessage((responseData as any)?.error || 'Ocorreu um erro ao cadastrar.');
+        return;
       }
+
+      setIsError(false);
+      setMessage('Cadastro realizado com sucesso!');
     } catch (error: unknown) {
-      console.error('3. --- ERRO DE REDE/CÓDIGO:', error); // <--- Adicione aqui!
       setIsError(true);
-      const fallbackMessage =
-        error instanceof Error ? error.message : 'Ocorreu um erro inesperado.';
+      const fallbackMessage = error instanceof Error ? error.message : 'Ocorreu um erro inesperado.';
       setMessage(fallbackMessage);
     }
-    console.log('4. --- FUNÇÃO ON SUBMIT FINALIZADA ---'); // <--- Adicione aqui!
   };
-
-  // --- Estilos e Cores ---
 
   return (
     <>
-      {/* -------------------- HEADER INTEGRADO -------------------- */}
+      {/* -------------------- HEADER -------------------- */}
       <header
         style={{
           width: '100%',
@@ -195,20 +208,12 @@ export default function CadastroPage() {
           alignItems: 'center',
         }}
       >
-        {/* Logo AGROLINQ */}
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <div style={{ width: '120px', height: '40px', position: 'relative' }}>
-            <Image
-              src="/logo.png"
-              alt="Logo AGROLINQ"
-              fill
-              priority
-              style={{ objectFit: 'contain' }}
-            />
+            <Image src="/logo.png" alt="Logo AGROLINQ" fill priority style={{ objectFit: 'contain' }} />
           </div>
         </Link>
 
-        {/* Link de Retorno */}
         <Link
           href="/"
           style={{
@@ -232,9 +237,8 @@ export default function CadastroPage() {
           &#8592; Voltar à Página Inicial
         </Link>
       </header>
-      {/* -------------------- FIM DO HEADER -------------------- */}
 
-      {/* CONTAINER PRINCIPAL (BODY) */}
+      {/* -------------------- BODY -------------------- */}
       <div
         style={{
           minHeight: '100vh',
@@ -258,7 +262,7 @@ export default function CadastroPage() {
             alignItems: 'center',
           }}
         >
-          {/* Lado Esquerdo - Branding (Logo AGROLINQ) */}
+          {/* Lado Esquerdo */}
           <div
             style={{
               flex: 1,
@@ -270,17 +274,11 @@ export default function CadastroPage() {
             }}
           >
             <div style={{ width: '400px', height: '145px', position: 'relative' }}>
-              <Image
-                src="/logo.png"
-                alt="AGROLINQ Logo"
-                fill
-                priority
-                style={{ objectFit: 'contain' }}
-              />
+              <Image src="/logo.png" alt="AGROLINQ Logo" fill priority style={{ objectFit: 'contain' }} />
             </div>
           </div>
 
-          {/* Lado Direito - Card do Formulário */}
+          {/* Lado Direito - Form */}
           <div
             style={{
               flex: 1,
@@ -313,7 +311,8 @@ export default function CadastroPage() {
                   gap: '0.5rem',
                 }}
               >
-                <span style={{ color: PRIMARY_COLOR, fontSize: '2rem' }}></span> 🌱 Cadastre-se 🌱
+                <span style={{ color: PRIMARY_COLOR, fontSize: '2rem' }} />
+                🌱 Cadastre-se 🌱
               </h2>
 
               <form
@@ -329,22 +328,17 @@ export default function CadastroPage() {
                   error={errors.email}
                   autoComplete="email"
                 />
-                <FormInput
-                  id="cpf"
-                  label="CPF"
-                  register={register}
-                  error={errors.cpf}
-                  mask={true}
-                />
+                <FormInput id="cpf" label="CPF" register={register} error={errors.cpf} mask />
                 <FormInput
                   id="senha"
                   type="password"
                   label="Senha"
                   register={register}
                   error={errors.senha}
+                  autoComplete="new-password"
                 />
 
-                {/* Mensagens de feedback */}
+                {/* Mensagens */}
                 {message && (
                   <div
                     style={{
@@ -352,16 +346,17 @@ export default function CadastroPage() {
                       padding: '1rem',
                       borderRadius: '0.5rem',
                       fontSize: '0.875rem',
-                      color: isError ? ERROR_COLOR : PRIMARY_COLOR,
-                      background: isError ? '#fef2f2' : '#6a8c7cff',
-                      border: `1px solid ${isError ? '#fca5a5' : PRIMARY_COLOR}`,
+                      color: isError ? ERROR_COLOR : '#166534',
+                      background: isError ? '#fef2f2' : '#ecfdf5',
+                      border: `1px solid ${isError ? '#fca5a5' : '#bbf7d0'}`,
+                      textAlign: 'center',
                     }}
                   >
                     {message}
                   </div>
                 )}
 
-                {/* Botão de Cadastro */}
+                {/* Botão */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -377,16 +372,17 @@ export default function CadastroPage() {
                     cursor: isSubmitting ? 'not-allowed' : 'pointer',
                     transition: 'background-color 0.15s ease-in-out',
                   }}
-                  onMouseOver={(e) =>
-                    !isSubmitting && (e.currentTarget.style.backgroundColor = PRIMARY_HOVER_COLOR)
-                  }
-                  onMouseOut={(e) =>
-                    !isSubmitting && (e.currentTarget.style.backgroundColor = PRIMARY_COLOR)
-                  }
+                  onMouseOver={(e) => {
+                    if (!isSubmitting) e.currentTarget.style.backgroundColor = PRIMARY_HOVER_COLOR;
+                  }}
+                  onMouseOut={(e) => {
+                    if (!isSubmitting) e.currentTarget.style.backgroundColor = PRIMARY_COLOR;
+                  }}
                 >
                   {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
                 </button>
 
+                {/* Já tem conta? */}
                 <p
                   style={{
                     marginTop: '1rem',
@@ -396,9 +392,9 @@ export default function CadastroPage() {
                   }}
                 >
                   Já tem uma conta?{' '}
-                  <a href="/login" style={{ color: PRIMARY_COLOR, textDecoration: 'none' }}>
+                  <Link href="/login" style={{ color: PRIMARY_COLOR, textDecoration: 'none' }}>
                     Faça Login
-                  </a>
+                  </Link>
                 </p>
               </form>
             </div>
