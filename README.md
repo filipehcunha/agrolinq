@@ -37,3 +37,45 @@ O AgroLinq busca reduzir essa distância e melhorar o acesso a alimentos locais,
 - Guilherme Pilz
 - Guilherme Jesus
 - Filipe Cunha
+
+## Execução do Projeto
+
+### Requisitos
+
+- Node.js (recomendado: LTS)
+- NPM
+- Uma instância MongoDB (ex.: MongoDB Atlas Free Tier)
+
+### Variáveis de Ambiente
+
+Crie um arquivo `.env.local` na raiz do projeto e defina uma destas variáveis (a primeira tem prioridade no código):
+
+`DATABASE_URL="mongodb+srv://<usuario>:<senha>@<cluster-host>/<database>?retryWrites=true&w=majority"`
+
+### Instalação
+
+`npm install`
+
+### Rodar em Desenvolvimento
+
+`npm run dev`
+
+Acesse: `http://localhost:3000`
+
+### Build e Produção (local)
+
+`npm run build`
+
+`npm run start`
+
+### Testes
+
+- E2E (Playwright):
+
+`npx playwright install`
+
+`npm test`
+
+## Deploy (Vercel)
+
+Site em produção (cadastro e login): https://agrolinq.vercel.app/
