@@ -3,9 +3,10 @@
 ## Sprint 1 – Estrutura Inicial
 
 ### Funcionalidades Entregues
-- Estrutura inicial do projeto Next.js
-- Organização de pastas (app, api, docs)
-- Configuração de dependências e scripts
+- Estrutura inicial do projeto Next.js (FILIPE)
+- Organização de pastas (app, api, docs) (FILIPE)
+- Documentação (GUILHERME PILZ)
+- Configuração de dependências e scripts (TODOS)
 
 ### Evidências
 - Estrutura do repositório
@@ -19,12 +20,11 @@
 ## Sprint 2 – Base de Usuários e Perfis
 
 ### Funcionalidades Entregues
-- Modelos de usuários
-- Diferenciação entre tipos de usuários (produtor, consumidor, restaurante)
+- Autenticação no sistema (HEITOR, FILIPE)
 
 ### Evidências
-- Código presente em `/app` e `/app/api`
-- Schemas e rotas de autenticação
+- Código presente em `/app` e `/app/api` (HEITOR)
+- Schemas e rotas de autenticação (HEITOR)
 
 ### Responsável
 - Equipe Agrolinq
