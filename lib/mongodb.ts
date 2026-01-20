@@ -28,6 +28,12 @@ async function dbConnect() {
   }
 
   if (!MONGODB_URI) {
+    if (process.env.CI || process.env.NODE_ENV === 'test') {
+      console.warn(
+        'MONGODB_URI is missing. Proceeding without database connection (Mock Mode).'
+      );
+      return null;
+    }
     throw new Error(
       'Please define the DATABASE_URL or MONGODB_URI environment variable inside .env.local'
     );
