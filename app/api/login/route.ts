@@ -1,9 +1,9 @@
-
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import * as z from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Consumidor from '@/models/Consumidor';
+import Produtor from '@/models/Produtor';
 
 const loginSchema = z.object({
     email: z.string().email('E-mail inválido.'),
@@ -26,13 +26,29 @@ export async function POST(request: Request) {
 
         const { email, senha } = validation.data;
 
-        // Buscar usuário pelo e-mail
-        const user = await Consumidor.findOne({ email });
+        // Buscar usuário pelo e-mail (Consumidor ou Produtor)
+        let user: any = await Consumidor.findOne({ email });
+        let tipo: 'consumidor' | 'produtor';
+
+        if (user) {
+            tipo = 'consumidor';
+        } else {
+            user = await Produtor.findOne({ email });
+            tipo = 'produtor';
+        }
 
         if (!user) {
             return NextResponse.json(
                 { error: 'E-mail ou senha incorretos.' },
                 { status: 401 }
+            );
+        }
+
+        // Verificar se a conta está bloqueada
+        if (user.status === 'bloqueado') {
+            return NextResponse.json(
+                { error: 'Conta bloqueada. Entre em contato com o suporte.' },
+                { status: 403 }
             );
         }
 
@@ -55,6 +71,10 @@ export async function POST(request: Request) {
                     id: user._id,
                     nome: user.nome,
                     email: user.email,
+                    tipo,
+                    ...(tipo === 'produtor' && {
+                        seloVerdeStatus: user.seloVerdeStatus,
+                    }),
                 },
             },
             { status: 200 }
