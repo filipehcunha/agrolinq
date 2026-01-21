@@ -8,7 +8,6 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
 const PRIMARY_COLOR = '#22c55e';
-const PRIMARY_HOVER_COLOR = '#16a34a';
 const BG_COLOR = '#f8fafc';
 const SHADOW_COLOR = 'rgba(15, 23, 42, 0.12)';
 const ERROR_COLOR = '#dc2626';
@@ -72,7 +71,7 @@ export default function LoginPage() {
                 router.push('/dashboard');
             }, 1000);
 
-        } catch (error) {
+        } catch (_) {
             setIsError(true);
             setMessage('Ocorreu um erro inesperado.');
         }

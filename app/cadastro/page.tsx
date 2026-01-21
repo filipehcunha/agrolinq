@@ -81,12 +81,12 @@ const FormInput = ({
   };
 
   const handleBlur = (event: FocusEvent<HTMLInputElement>) => {
-    Object.assign(event.target.style, FORM_FIELD_STYLE as any);
+    Object.assign(event.target.style, FORM_FIELD_STYLE);
     onBlur(event);
   };
 
   const handleFocus = (event: FocusEvent<HTMLInputElement>) => {
-    Object.assign(event.target.style, FOCUS_STYLE as any);
+    Object.assign(event.target.style, FOCUS_STYLE);
   };
 
   return (
@@ -181,7 +181,7 @@ export default function CadastroPage() {
 
       if (!response.ok) {
         setIsError(true);
-        setMessage((responseData as any)?.error || 'Ocorreu um erro ao cadastrar.');
+        setMessage((responseData as { error?: string }).error || 'Ocorreu um erro ao cadastrar.');
         return;
       }
 

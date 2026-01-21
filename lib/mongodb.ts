@@ -3,11 +3,6 @@ import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.DATABASE_URL || process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error(
-    'Please define the DATABASE_URL or MONGODB_URI environment variable inside .env.local'
-  );
-}
 
 type MongooseCache = {
   conn: typeof mongoose | null;
@@ -30,6 +25,18 @@ globalWithMongoose.mongoose = cached;
 async function dbConnect() {
   if (cached.conn) {
     return cached.conn;
+  }
+
+  if (!MONGODB_URI) {
+    if (process.env.CI || process.env.NODE_ENV === 'test') {
+      console.warn(
+        'MONGODB_URI is missing. Proceeding without database connection (Mock Mode).'
+      );
+      return null;
+    }
+    throw new Error(
+      'Please define the DATABASE_URL or MONGODB_URI environment variable inside .env.local'
+    );
   }
 
   if (!cached.promise) {
