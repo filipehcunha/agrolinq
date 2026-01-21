@@ -1,105 +1,202 @@
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useCart } from "@/context/CartContext";
+import Link from "next/link";
 
-const produtosMock = [
-  { id: "1", nome: "Alface", preco: 5, distanciaKm: 2.1, tipo: "Verdura" },
-  { id: "2", nome: "Tomate", preco: 8, distanciaKm: 5.4, tipo: "Fruta" },
-  { id: "3", nome: "Cenoura", preco: 4, distanciaKm: 3.0, tipo: "Legume" },
-  { id: "4", nome: "Banana", preco: 6, distanciaKm: 1.5, tipo: "Fruta" },
-  { id: "5", nome: "Rúcula", preco: 5.5, distanciaKm: 2.5, tipo: "Verdura" },
-  { id: "6", nome: "Batata", preco: 7, distanciaKm: 8.0, tipo: "Legume" },
-];
+interface Produto {
+  _id: string;
+  nome: string;
+  preco: number;
+  categoria: string;
+  imagemUrl?: string;
+  produtorId: string;
+  unidade: string;
+}
 
 export default function ListaProdutos() {
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { addItem } = useCart();
+  const [notification, setNotification] = useState("");
+
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroPrecoMax, setFiltroPrecoMax] = useState("");
 
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        setProdutos(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar produtos:", err);
+        setLoading(false);
+      });
+  }, []);
+
   const produtosFiltrados = useMemo(() => {
-    return produtosMock
+    return produtos
       .filter((produto) => {
-        const matchTipo = filtroTipo ? produto.tipo === filtroTipo : true;
+        const matchTipo = filtroTipo ? produto.categoria === filtroTipo : true;
         const matchPreco = filtroPrecoMax
           ? produto.preco <= Number(filtroPrecoMax)
           : true;
         return matchTipo && matchPreco;
-      })
-      .sort((a, b) => a.distanciaKm - b.distanciaKm);
-  }, [filtroTipo, filtroPrecoMax]);
+      });
+  }, [produtos, filtroTipo, filtroPrecoMax]);
 
   const tiposDisponiveis = Array.from(
-    new Set(produtosMock.map((p) => p.tipo))
+    new Set(produtos.map((p) => p.categoria))
   );
 
+  const handleAddToCart = (produto: Produto) => {
+    addItem({
+      produtoId: produto._id,
+      nome: produto.nome,
+      preco: produto.preco,
+      quantidade: 1,
+      imagemUrl: produto.imagemUrl,
+      produtorId: produto.produtorId,
+    });
+    setNotification(`${produto.nome} adicionado ao carrinho!`);
+    setTimeout(() => setNotification(""), 3000);
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-semibold mb-4">Produtos Próximos</h1>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+        <h1 className="text-xl font-bold text-green-600">
+          <Link href="/dashboard">AGROLINQ</Link>
+        </h1>
+        <Link href="/dashboard/carrinho" className="flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          Carrinho
+        </Link>
+      </header>
 
-      {/* Filtros */}
-      <div className="mb-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-wrap gap-4 items-end">
-        <div>
-          <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">
-            Tipo
-          </label>
-          <select
-            id="tipo"
-            value={filtroTipo}
-            onChange={(e) => setFiltroTipo(e.target.value)}
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 border"
+      <div className="p-6 max-w-6xl mx-auto w-full">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Produtos Disponíveis</h1>
+          <Link href="/dashboard" className="text-sm text-gray-500 hover:underline">Voltar ao painel</Link>
+        </div>
+
+        {notification && (
+          <div className="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in-up">
+            {notification}
+          </div>
+        )}
+
+        {/* Filtros */}
+        <div className="mb-8 p-6 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-6 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
+              Categoria
+            </label>
+            <select
+              id="tipo"
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value)}
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm p-2.5 border"
+            >
+              <option value="">Todas</option>
+              {tiposDisponiveis.map((tipo) => (
+                <option key={tipo} value={tipo}>
+                  {tipo}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[200px]">
+            <label htmlFor="preco" className="block text-sm font-medium text-gray-700 mb-2">
+              Preço Máximo (R$)
+            </label>
+            <input
+              type="number"
+              id="preco"
+              value={filtroPrecoMax}
+              onChange={(e) => setFiltroPrecoMax(e.target.value)}
+              placeholder="Ex: 20"
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 text-sm p-2.5 border"
+            />
+          </div>
+
+          <button
+            onClick={() => { setFiltroTipo(""); setFiltroPrecoMax("") }}
+            className="px-4 py-2.5 text-sm font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <option value="">Todos</option>
-            {tiposDisponiveis.map((tipo) => (
-              <option key={tipo} value={tipo}>
-                {tipo}
-              </option>
+            Limpar Filtros
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <p className="mt-2 text-gray-500">Carregando produtos...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {produtosFiltrados.map((p) => (
+              <div key={p._id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
+                <div className="h-48 bg-gray-100 relative">
+                  {p.imagemUrl ? (
+                    <img src={p.imagemUrl} alt={p.nome} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-400 bg-gray-50">
+                      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                  <span className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-bold px-2 py-1 rounded-md shadow-sm">
+                    {p.categoria}
+                  </span>
+                </div>
+
+                <div className="p-4 flex-1 flex flex-col">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800 text-lg mb-1">{p.nome}</h3>
+                    <p className="text-sm text-gray-500 mb-3">Produtor Local</p> {/* Future: Real producer name */}
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
+                    <div>
+                      <span className="block text-xs text-gray-500">Preço por {p.unidade}</span>
+                      <span className="text-lg font-bold text-green-600">R$ {p.preco.toFixed(2)}</span>
+                    </div>
+                    <button
+                      onClick={() => handleAddToCart(p)}
+                      className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg shadow-sm transition-colors"
+                      aria-label="Adicionar ao carrinho"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))}
-          </select>
-        </div>
+          </div>
+        )}
 
-        <div>
-          <label htmlFor="preco" className="block text-sm font-medium text-gray-700 mb-1">
-            Preço Máximo (R$)
-          </label>
-          <input
-            type="number"
-            id="preco"
-            value={filtroPrecoMax}
-            onChange={(e) => setFiltroPrecoMax(e.target.value)}
-            placeholder="Ex: 10"
-            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm p-2 border"
-          />
-        </div>
-
-        <div className="flex-1"></div>
-
-        <button
-          onClick={() => { setFiltroTipo(""); setFiltroPrecoMax("") }}
-          className="text-sm text-gray-500 hover:text-gray-700 underline"
-        >
-          Limpar Filtros
-        </button>
+        {!loading && produtosFiltrados.length === 0 && (
+          <div className="text-center py-16 bg-white rounded-xl border border-gray-100">
+            <div className="inline-block p-4 rounded-full bg-gray-50 text-gray-400 mb-4">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900">Nenhum produto encontrado</h3>
+            <p className="text-gray-500 mt-1">Tente ajustar seus filtros de busca.</p>
+          </div>
+        )}
       </div>
-
-      <ul className="space-y-2">
-        {produtosFiltrados.map((p) => (
-          <li key={p.id} className="border p-3 rounded flex justify-between items-center bg-white shadow-sm">
-            <div>
-              <div className="font-medium">{p.nome}</div>
-              <div className="text-sm text-gray-500">{p.tipo}</div>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold text-green-700">R$ {p.preco.toFixed(2)}</div>
-              <div className="text-xs text-gray-500">{p.distanciaKm} km</div>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {produtosFiltrados.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          Nenhum produto encontrado com os filtros selecionados.
-        </div>
-      )}
     </div>
   );
 }
