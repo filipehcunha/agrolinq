@@ -4,6 +4,7 @@ import * as z from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Consumidor from '@/models/Consumidor';
 import Produtor from '@/models/Produtor';
+export const dynamic = 'force-dynamic';
 
 interface BaseUser {
     _id: string;
@@ -98,3 +99,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Erro interno do servidor.' }, { status: 500 });
     }
 }
+
