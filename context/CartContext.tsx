@@ -29,17 +29,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Load from localStorage on mount
     useEffect(() => {
-        const savedCart = localStorage.getItem('cart');
+        if (typeof window === 'undefined') return;
     
+        const savedCart = localStorage.getItem('cart');
         if (!savedCart) return;
     
         try {
-            const parsed = JSON.parse(savedCart);
-            setItems(() => parsed);
+            setItems(JSON.parse(savedCart));
         } catch {
-            console.error('Failed to parse cart from local storage');
+            console.error('Invalid cart data');
         }
     }, []);
+
 
 
     // Save to localStorage whenever items change
@@ -87,4 +88,5 @@ export function useCart() {
     }
     return context;
 }
+
 
