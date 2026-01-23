@@ -9,24 +9,25 @@ import {
 } from 'react';
 
 export interface CartItem {
-      id: string; // interno, gerado pelo carrinho
-      produtoId: string;
-      produtorId: string;
-      nome: string;
-      preco: number;
-      quantidade: number;
-      imagemUrl?: string;
+  id: string; // interno, gerado pelo carrinho
+  produtoId: string;
+  produtorId: string;
+  nome: string;
+  preco: number;
+  quantidade: number;
+  imagemUrl?: string;
 }
 
-
+export type AddCartItem = Omit<CartItem, 'id'>;
 
 interface CartContextType {
-    items: CartItem[];
-    addItem: (item: CartItem) => void;
-    removeItem: (id: string) => void;
-    clearCart: () => void;
-    total: number;
+      items: CartItem[];
+      addItem: (item: AddCartItem) => void;
+      removeItem: (id: string) => void;
+      clearCart: () => void;
+      total: number;
 }
+
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -45,21 +46,36 @@ function loadInitialCart(): CartItem[] {
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>(loadInitialCart);
 
-    const addItem = (item: CartItem) => {
-        setItems(prev => {
-            const existing = prev.find(i => i.id === item.id);
+    const addItem = (item: AddCartItem) => {
+          setItems((prevItems) => {
+            const existingItemIndex = prevItems.findIndex(
+              (i) => i.produtoId === item.produtoId
+            );
+        
+            // Caso 1: produto já está no carrinho → soma quantidade
+            if (existingItemIndex !== -1) {
+              const updatedItems = [...prevItems];
+        
+              updatedItems[existingItemIndex] = {
+                ...updatedItems[existingItemIndex],
+                quantidade:
+                  updatedItems[existingItemIndex].quantidade + item.quantidade,
+              };
+        
+              return updatedItems;
+    }
 
-            if (existing) {
-                return prev.map(i =>
-                    i.id === item.id
-                        ? { ...i, quantidade: i.quantidade + item.quantidade }
-                        : i
-                );
-            }
+    // Caso 2: produto novo → cria item com id interno
+    return [
+      ...prevItems,
+      {
+        ...item,
+        id: crypto.randomUUID(),
+      },
+    ];
+  });
+};
 
-            return [...prev, item];
-        });
-    };
 
     const removeItem = (id: string) => {
         setItems(prev => prev.filter(item => item.id !== id));
@@ -95,6 +111,7 @@ export function useCart() {
     }
     return context;
 }
+
 
 
 
