@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Produto from '@/models/Produto';
@@ -29,13 +30,27 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    let body: ProdutoPayload;
+
     try {
-        const body: ProdutoPayload = await request.json();
+        body = await request.json();
+    } catch {
+        return NextResponse.json(
+            { error: 'JSON inválido' },
+            { status: 400 }
+        );
+    }
+
+    try {
         const produto = await Produto.create(body);
         return NextResponse.json(produto, { status: 201 });
     } catch {
-        return NextResponse.json({ error: 'Erro ao criar produto.' }, { status: 500 });
+        return NextResponse.json(
+            { error: 'Erro ao criar produto.' },
+            { status: 500 }
+        );
     }
 }
+
 
 
