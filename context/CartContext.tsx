@@ -1,81 +1,38 @@
+'use client';
 
-"use client";
-
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 export interface CartItem {
-    produtoId: string;
+    id: string;
     nome: string;
     preco: number;
     quantidade: number;
-    imagemUrl?: string;
-    produtorId: string;
 }
 
 interface CartContextType {
     items: CartItem[];
-    addItem: (item: CartItem) => void;
-    removeItem: (produtoId: string) => void;
-    clearCart: () => void;
-    total: number;
-    itemCount: number;
+    setItems: React.Dispatch<React.SetStateAction<CartItem[]>>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function loadInitialCart(): CartItem[] {
+    if (typeof window === 'undefined') return [];
+
+    try {
+        const saved = localStorage.getItem('cart');
+        return saved ? JSON.parse(saved) : [];
+    } catch {
+        console.error('Invalid cart data');
+        return [];
+    }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
-    const [items, setItems] = useState<CartItem[]>([]);
-    const [isLoaded, setIsLoaded] = useState(false);
-
-    // Load from localStorage on mount
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-    
-        const savedCart = localStorage.getItem('cart');
-        if (!savedCart) return;
-    
-        try {
-            setItems(JSON.parse(savedCart));
-        } catch {
-            console.error('Invalid cart data');
-        }
-    }, []);
-
-
-
-    // Save to localStorage whenever items change
-    useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem("agrolinq_cart", JSON.stringify(items));
-        }
-    }, [items, isLoaded]);
-    const addItem = (newItem: CartItem) => {
-        setItems((prev) => {
-            const existing = prev.find((i) => i.produtoId === newItem.produtoId);
-            if (existing) {
-                return prev.map((i) =>
-                    i.produtoId === newItem.produtoId
-                        ? { ...i, quantidade: i.quantidade + newItem.quantidade }
-                        : i
-                );
-            }
-            return [...prev, newItem];
-        });
-    };
-
-    const removeItem = (produtoId: string) => {
-        setItems((prev) => prev.filter((i) => i.produtoId !== produtoId));
-    };
-
-    const clearCart = () => {
-        setItems([]);
-    };
-
-    const total = items.reduce((acc, item) => acc + item.preco * item.quantidade, 0);
-    const itemCount = items.reduce((acc, item) => acc + item.quantidade, 0);
+    const [items, setItems] = useState<CartItem[]>(loadInitialCart);
 
     return (
-        <CartContext.Provider value={{ items, addItem, removeItem, clearCart, total, itemCount }}>
+        <CartContext.Provider value={{ items, setItems }}>
             {children}
         </CartContext.Provider>
     );
@@ -83,10 +40,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
 export function useCart() {
     const context = useContext(CartContext);
-    if (context === undefined) {
-        throw new Error("useCart must be used within a CartProvider");
+    if (!context) {
+        throw new Error('useCart must be used within CartProvider');
     }
     return context;
 }
+
 
 
