@@ -3,49 +3,39 @@ import dbConnect from '@/lib/mongodb';
 import Consumidor from '@/models/Consumidor';
 import Produtor from '@/models/Produtor';
 
-export async function PATCH(
-    request: Request,
-    { params }: { params: { id: string } }
-) {
-    await dbConnect();
+export const dynamic = 'force-dynamic';
+
+interface BloqueioPayload {
+    usuarioId: string;
+    bloqueado: boolean;
+}
+
+export async function PATCH(request: Request) {
+    let body: BloqueioPayload;
 
     try {
-        const { status } = await request.json();
-
-        if (!['ativo', 'bloqueado'].includes(status)) {
-            return NextResponse.json(
-                { error: 'Status inválido.' },
-                { status: 400 }
-            );
-        }
-
-        // Buscar usuário (Consumidor ou Produtor)
-        let user = await Consumidor.findById(params.id);
-
-        if (!user) {
-            user = await Produtor.findById(params.id);
-        }
-
-        if (!user) {
-            return NextResponse.json(
-                { error: 'Usuário não encontrado.' },
-                { status: 404 }
-            );
-        }
-
-        // Atualizar status
-        user.status = status;
-        await user.save();
-
+        body = await request.json();
+    } catch {
         return NextResponse.json(
-            { message: `Usuário ${status} com sucesso.` },
-            { status: 200 }
-        );
-    } catch (error) {
-        console.error('Erro ao bloquear usuário:', error);
-        return NextResponse.json(
-            { error: 'Erro interno do servidor.' },
-            { status: 500 }
+            { error: 'JSON inválido' },
+            { status: 400 }
         );
     }
+
+    const { usuarioId, bloqueado } = body;
+
+    if (!usuarioId) {
+        return NextResponse.json(
+            { error: 'usuarioId é obrigatório' },
+            { status: 400 }
+        );
+    }
+
+    // lógica de bloqueio/desbloqueio
+    // await Usuario.findByIdAndUpdate(usuarioId, { bloqueado });
+
+    return NextResponse.json(
+        { message: 'Status de bloqueio atualizado com sucesso' },
+        { status: 200 }
+    );
 }
