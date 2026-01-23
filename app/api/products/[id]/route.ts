@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Produto from '@/models/Produto';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
     try {
@@ -56,3 +57,4 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
         return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
     }
 }
+
