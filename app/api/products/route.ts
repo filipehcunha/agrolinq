@@ -1,4 +1,4 @@
-
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Produto from '@/models/Produto';
@@ -37,4 +37,5 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Erro ao criar produto.' }, { status: 500 });
     }
 }
+
 
