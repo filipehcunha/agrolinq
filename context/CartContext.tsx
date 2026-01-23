@@ -29,16 +29,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     // Load from localStorage on mount
     useEffect(() => {
-        const savedCart = localStorage.getItem("agrolinq_cart");
-        if (savedCart) {
-            try {
-                setItems(JSON.parse(savedCart));
-            } catch (e) {
-                console.error("Failed to parse cart from local storage");
-            }
+        const savedCart = localStorage.getItem('cart');
+    
+        if (!savedCart) return;
+    
+        try {
+            const parsed = JSON.parse(savedCart);
+            setItems(() => parsed);
+        } catch {
+            console.error('Failed to parse cart from local storage');
         }
-        setIsLoaded(true);
     }, []);
+
 
     // Save to localStorage whenever items change
     useEffect(() => {
@@ -46,7 +48,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("agrolinq_cart", JSON.stringify(items));
         }
     }, [items, isLoaded]);
-
     const addItem = (newItem: CartItem) => {
         setItems((prev) => {
             const existing = prev.find((i) => i.produtoId === newItem.produtoId);
@@ -86,3 +87,4 @@ export function useCart() {
     }
     return context;
 }
+
