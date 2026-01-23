@@ -3,6 +3,12 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Produto from '@/models/Produto';
 
+interface ProdutoPayload {
+    nome: string;
+    preco: number;
+    descricao?: string;
+}
+
 export async function GET(request: Request) {
     try {
         await dbConnect();
@@ -24,18 +30,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        await dbConnect();
-        const body = await request.json();
-
-        // Validations (basic)
-        if (!body.nome || !body.preco || !body.produtorId) {
-            return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 });
-        }
-
+        const body: ProdutoPayload = await request.json();
         const produto = await Produto.create(body);
         return NextResponse.json(produto, { status: 201 });
-    } catch (error) {
-        console.error("DEBUG: Error creating product:", error);
-        return NextResponse.json({ error: 'Erro ao criar produto', details: String(error) }, { status: 500 });
+    } catch {
+        return NextResponse.json({ error: 'Erro ao criar produto.' }, { status: 500 });
     }
 }
+
