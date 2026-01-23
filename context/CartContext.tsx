@@ -13,6 +13,7 @@ export interface CartItem {
     nome: string;
     preco: number;
     quantidade: number;
+    produtorId: string;
 }
 
 interface CartContextType {
@@ -90,6 +91,7 @@ export function useCart() {
     }
     return context;
 }
+
 
 
 
