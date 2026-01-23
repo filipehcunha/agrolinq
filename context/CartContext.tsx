@@ -15,7 +15,9 @@ export interface CartItem {
     nome: string;
     preco: number;
     quantidade: number;
+    imagemUrl?: string; 
 }
+
 
 interface CartContextType {
     items: CartItem[];
@@ -92,6 +94,7 @@ export function useCart() {
     }
     return context;
 }
+
 
 
 
