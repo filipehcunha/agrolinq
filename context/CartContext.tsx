@@ -10,10 +10,11 @@ import {
 
 export interface CartItem {
     id: string;
+    produtoId: string;
+    produtorId: string;
     nome: string;
     preco: number;
     quantidade: number;
-    produtorId: string;
 }
 
 interface CartContextType {
@@ -91,6 +92,7 @@ export function useCart() {
     }
     return context;
 }
+
 
 
 
