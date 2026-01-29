@@ -54,6 +54,7 @@ export default function DashboardPage() {
             });
 
         // Initial fetch of orders
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchOrders();
 
         // Set up polling to check for order updates every 10 seconds

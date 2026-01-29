@@ -33,8 +33,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const savedCart = localStorage.getItem("agrolinq_cart");
         if (savedCart) {
             try {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setItems(JSON.parse(savedCart));
-            } catch (e) {
+            } catch {
                 console.error("Failed to parse cart from local storage");
             }
         }

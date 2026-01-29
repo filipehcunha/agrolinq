@@ -80,9 +80,10 @@ export default function CarrinhoPage() {
         router.push("/dashboard");
       }, 2000);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert(error.message || "Ocorreu um erro ao processar seu pedido. Tente novamente.");
+      const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro ao processar seu pedido. Tente novamente.";
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

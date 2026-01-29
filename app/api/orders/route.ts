@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const consumidorId = searchParams.get("consumidorId");
     const produtorId = searchParams.get("produtorId");
 
-    const query: any = {};
+    const query: Record<string, string> = {};
     if (consumidorId) query.consumidorId = consumidorId;
     if (produtorId) query.produtorId = produtorId;
 
