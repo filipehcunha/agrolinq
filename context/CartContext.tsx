@@ -16,6 +16,7 @@ interface CartContextType {
     items: CartItem[];
     addItem: (item: CartItem) => void;
     removeItem: (produtoId: string) => void;
+    updateQuantity: (produtoId: string, quantidade: number) => void;
     clearCart: () => void;
     total: number;
     itemCount: number;
@@ -32,8 +33,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const savedCart = localStorage.getItem("agrolinq_cart");
         if (savedCart) {
             try {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setItems(JSON.parse(savedCart));
-            } catch (e) {
+            } catch {
                 console.error("Failed to parse cart from local storage");
             }
         }
@@ -65,6 +67,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems((prev) => prev.filter((i) => i.produtoId !== produtoId));
     };
 
+    const updateQuantity = (produtoId: string, quantidade: number) => {
+        if (quantidade <= 0) {
+            removeItem(produtoId);
+            return;
+        }
+        setItems((prev) =>
+            prev.map((i) =>
+                i.produtoId === produtoId ? { ...i, quantidade } : i
+            )
+        );
+    };
+
     const clearCart = () => {
         setItems([]);
     };
@@ -73,7 +87,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const itemCount = items.reduce((acc, item) => acc + item.quantidade, 0);
 
     return (
-        <CartContext.Provider value={{ items, addItem, removeItem, clearCart, total, itemCount }}>
+        <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount }}>
             {children}
         </CartContext.Provider>
     );

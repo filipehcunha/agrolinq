@@ -10,6 +10,12 @@ export interface IProduto extends Document {
     produtorId: string; // ID do usuário que criou o produto
     estoque: number;
     unidade: string; // kg, unidade, maço, etc.
+    // Campos detalhados para página de produto
+    descricaoDetalhada?: string;
+    origem?: string; // Ex: "Fazenda São João, Holambra-SP"
+    certificacoes?: string[]; // Ex: ["Orgânico", "Livre de agrotóxicos"]
+    imagensAdicionais?: string[]; // URLs de imagens adicionais
+    especificacoes?: Map<string, string>; // Ex: { peso: "500g", cor: "Verde" }
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,6 +30,15 @@ const ProdutoSchema = new Schema<IProduto>(
         produtorId: { type: String, required: true },
         estoque: { type: Number, default: 0 },
         unidade: { type: String, default: 'unid' },
+        // Campos detalhados
+        descricaoDetalhada: { type: String },
+        origem: { type: String },
+        certificacoes: [{ type: String }],
+        imagensAdicionais: [{ type: String }],
+        especificacoes: {
+            type: Map,
+            of: String,
+        },
     },
     { timestamps: true }
 );

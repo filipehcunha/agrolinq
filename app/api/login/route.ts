@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import * as z from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Consumidor from '@/models/Consumidor';
+import Produtor from '@/models/Produtor';
 
 const loginSchema = z.object({
     email: z.string().email('E-mail inválido.'),
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
             {
                 message: 'Login realizado com sucesso!',
-                user: { id: 'mock-id', nome: 'Mock User', email: body.email },
+                user: { id: 'mock-id', nome: 'Mock User', email: body.email, tipo: 'consumidor' },
             },
             { status: 200 }
         );
@@ -37,8 +38,14 @@ export async function POST(request: Request) {
 
         const { email, senha } = validation.data;
 
-        // Buscar usuário pelo e-mail
-        const user = await Consumidor.findOne({ email });
+        // Buscar usuário em ambas as coleções
+        let user = await Consumidor.findOne({ email });
+        let userType = 'consumidor';
+
+        if (!user) {
+            user = await Produtor.findOne({ email });
+            userType = 'produtor';
+        }
 
         if (!user) {
             return NextResponse.json(
@@ -58,7 +65,6 @@ export async function POST(request: Request) {
         }
 
         // Login bem-sucedido
-        // Nota: Em um app real, aqui você geraria um JWT ou configuraria uma sessão.
         return NextResponse.json(
             {
                 message: 'Login realizado com sucesso!',
@@ -66,6 +72,7 @@ export async function POST(request: Request) {
                     id: user._id,
                     nome: user.nome,
                     email: user.email,
+                    tipo: userType,
                 },
             },
             { status: 200 }

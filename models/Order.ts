@@ -4,7 +4,8 @@ export type OrderStatus =
   | "novo"
   | "em_separacao"
   | "enviado"
-  | "concluido";
+  | "concluido"
+  | "cancelado";
 
 export interface IOrder extends Document {
   consumidorId: string;
@@ -17,7 +18,12 @@ export interface IOrder extends Document {
   }[];
   total: number;
   status: OrderStatus;
+  produtorNotificado: boolean;
+  canceladoPor?: "produtor" | "consumidor";
+  motivoCancelamento?: string;
+  canceladoEm?: Date;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 const OrderSchema = new Schema<IOrder>(
@@ -35,9 +41,13 @@ const OrderSchema = new Schema<IOrder>(
     total: { type: Number, required: true },
     status: {
       type: String,
-      enum: ["novo", "em_separacao", "enviado", "concluido"],
+      enum: ["novo", "em_separacao", "enviado", "concluido", "cancelado"],
       default: "novo",
     },
+    produtorNotificado: { type: Boolean, default: false },
+    canceladoPor: { type: String, enum: ["produtor", "consumidor"] },
+    motivoCancelamento: { type: String },
+    canceladoEm: { type: Date },
   },
   { timestamps: true }
 );

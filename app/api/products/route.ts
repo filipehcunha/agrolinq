@@ -10,7 +10,7 @@ export async function GET(request: Request) {
         const produtorId = searchParams.get('produtorId');
         const categoria = searchParams.get('categoria');
 
-        const query: any = {};
+        const query: Record<string, string> = {};
         if (produtorId) query.produtorId = produtorId;
         if (categoria) query.categoria = categoria;
 
