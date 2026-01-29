@@ -66,9 +66,12 @@ export default function LoginPage() {
             setIsError(false);
             setMessage('Login realizado com sucesso! Redirecionando...');
 
-            // Redirect to dashboard
+            // Redirecionar baseado no tipo de usuário
+            const userType = (responseData as { user?: { tipo?: string } }).user?.tipo;
+            const redirectPath = userType === 'produtor' ? '/produtor' : '/dashboard';
+
             setTimeout(() => {
-                router.push('/dashboard');
+                router.push(redirectPath);
             }, 1000);
 
         } catch (_) {

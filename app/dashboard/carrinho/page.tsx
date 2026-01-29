@@ -15,6 +15,25 @@ export default function CarrinhoPage() {
   const handleCheckout = async () => {
     setLoading(true);
 
+    // Validate inventory before checkout
+    try {
+      for (const item of items) {
+        const res = await fetch(`/api/products/${item.produtoId}`);
+        const produto = await res.json();
+
+        if (produto.estoque < item.quantidade) {
+          alert(`Estoque insuficiente para ${item.nome}. Disponível: ${produto.estoque}, no carrinho: ${item.quantidade}`);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao validar estoque:", error);
+      alert("Erro ao validar disponibilidade dos produtos. Tente novamente.");
+      setLoading(false);
+      return;
+    }
+
     // Group items by producer
     const itemsByProducer: { [key: string]: CartItem[] } = {};
     items.forEach(item => {
@@ -47,7 +66,10 @@ export default function CarrinhoPage() {
           body: JSON.stringify(payload)
         });
 
-        if (!res.ok) throw new Error("Falha ao criar pedido");
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Falha ao criar pedido");
+        }
       });
 
       await Promise.all(promises);
@@ -58,9 +80,9 @@ export default function CarrinhoPage() {
         router.push("/dashboard");
       }, 2000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert("Ocorreu um erro ao processar seu pedido. Tente novamente.");
+      alert(error.message || "Ocorreu um erro ao processar seu pedido. Tente novamente.");
     } finally {
       setLoading(false);
     }

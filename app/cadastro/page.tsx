@@ -41,6 +41,7 @@ const formSchema = z.object({
     .min(1, 'CPF é obrigatório.')
     .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido. Use o formato XXX.XXX.XXX-XX'),
   senha: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
+  tipo: z.enum(['consumidor', 'produtor'], { message: 'Selecione o tipo de perfil.' }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -188,8 +189,12 @@ export default function CadastroPage() {
 
       setIsError(false);
       setMessage('Cadastro realizado com sucesso! Redirecionando...');
+      
+      const userType = (responseData as { user?: { tipo?: string } }).user?.tipo || data.tipo;
+      const redirectPath = userType === 'produtor' ? '/produtor' : '/dashboard';
+      
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push(redirectPath);
       }, 1500);
     } catch (error: unknown) {
       setIsError(true);
@@ -344,6 +349,40 @@ export default function CadastroPage() {
                   error={errors.senha}
                   autoComplete="new-password"
                 />
+
+                {/* Seleção de Tipo de Usuário */}
+                <div>
+                  <label
+                    htmlFor="tipo"
+                    style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      color: '#374151',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    Tipo de Perfil
+                  </label>
+                  <select
+                    id="tipo"
+                    {...register('tipo')}
+                    style={{
+                      ...FORM_FIELD_STYLE,
+                      ...(errors.tipo ? { borderColor: ERROR_COLOR } : {}),
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="consumidor">🛒 Consumidor - Quero comprar produtos</option>
+                    <option value="produtor">🌾 Produtor - Quero vender meus produtos</option>
+                  </select>
+                  {errors.tipo && (
+                    <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: ERROR_COLOR }}>
+                      {errors.tipo.message}
+                    </p>
+                  )}
+                </div>
 
                 {/* Mensagens */}
                 {message && (

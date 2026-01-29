@@ -22,6 +22,11 @@ const ConsumidorSchema = new Schema({
     type: String,
     required: true,
   },
+  tipo: {
+    type: String,
+    default: 'consumidor',
+    enum: ['consumidor'],
+  },
   createdAt: {
     type: Date,
     default: Date.now,

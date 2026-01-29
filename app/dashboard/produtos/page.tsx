@@ -13,6 +13,7 @@ interface Produto {
   imagemUrl?: string;
   produtorId: string;
   unidade: string;
+  estoque: number;
 }
 
 export default function ListaProdutos() {
@@ -53,6 +54,12 @@ export default function ListaProdutos() {
   );
 
   const handleAddToCart = (produto: Produto) => {
+    if (produto.estoque === 0) {
+      setNotification(`${produto.nome} está fora de estoque!`);
+      setTimeout(() => setNotification(""), 3000);
+      return;
+    }
+
     addItem({
       produtoId: produto._id,
       nome: produto.nome,
@@ -162,6 +169,13 @@ export default function ListaProdutos() {
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-800 text-lg mb-1">{p.nome}</h3>
                     <p className="text-sm text-gray-500 mb-3">Produtor Local</p> {/* Future: Real producer name */}
+                    {p.estoque > 0 ? (
+                      <p className="text-xs text-green-600 font-medium">
+                        {p.estoque} {p.unidade} disponíveis
+                      </p>
+                    ) : (
+                      <p className="text-xs text-red-600 font-bold">Fora de estoque</p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
@@ -171,7 +185,11 @@ export default function ListaProdutos() {
                     </div>
                     <button
                       onClick={() => handleAddToCart(p)}
-                      className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg shadow-sm transition-colors"
+                      disabled={p.estoque === 0}
+                      className={`p-2 rounded-lg shadow-sm transition-colors ${p.estoque === 0
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white"
+                        }`}
                       aria-label="Adicionar ao carrinho"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
