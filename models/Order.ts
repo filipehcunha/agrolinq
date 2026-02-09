@@ -21,22 +21,11 @@ export interface IOrder extends Document {
   produtorNotificado: boolean;
 
   avaliacao?: {
-    nota: {
-      type: Number,
-      min: 1,
-      max: 5,
-      required: true,
-    },
-    comentario: {
-      type: String,
-      maxlength: 500,
-    },
-    avaliadoEm: {
-      type: Date,
-      default: Date.now,
-    },
+    nota: number;
+    comentario?: string;
+    avaliadoEm?: Date;
   };
-  
+
   canceladoPor?: "produtor" | "consumidor";
   motivoCancelamento?: string;
   canceladoEm?: Date;
@@ -63,6 +52,21 @@ const OrderSchema = new Schema<IOrder>(
       default: "novo",
     },
     produtorNotificado: { type: Boolean, default: false },
+    avaliacao: {
+      nota: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+      comentario: {
+        type: String,
+        maxlength: 500,
+      },
+      avaliadoEm: {
+        type: Date,
+        default: Date.now,
+      },
+    },
     canceladoPor: { type: String, enum: ["produtor", "consumidor"] },
     motivoCancelamento: { type: String },
     canceladoEm: { type: Date },

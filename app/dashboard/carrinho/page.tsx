@@ -5,14 +5,23 @@ import { useCart, CartItem } from "@/context/CartContext";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function CarrinhoPage() {
   const { items, removeItem, clearCart, total } = useCart();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   const handleCheckout = async () => {
+    // Check if user is logged in
+    if (!user) {
+      alert("Você precisa estar logado para finalizar o pedido.");
+      router.push('/login');
+      return;
+    }
+
     setLoading(true);
 
     // Validate inventory before checkout
@@ -49,7 +58,7 @@ export default function CarrinhoPage() {
         const producerTotal = producerItems.reduce((acc, i) => acc + (i.preco * i.quantidade), 0);
 
         const payload = {
-          consumidorId: "consumidor_123", // Fixed ID for MVP
+          consumidorId: user.id, // Dynamic user ID
           produtorId: produtorId,
           itens: producerItems.map(i => ({
             produtoId: i.produtoId,

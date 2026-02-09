@@ -4,16 +4,27 @@ import * as z from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Consumidor from '@/models/Consumidor';
 import Produtor from '@/models/Produtor';
+import Restaurante from '@/models/Restaurante';
 
 // Definição do Schema de Validação
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório."),
   email: z.string().email("E-mail inválido.").min(1, "E-mail é obrigatório."),
-  cpf: z.string()
-    .min(1, "CPF é obrigatório.")
-    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido. Use o formato XXX.XXX.XXX-XX"),
+  cpf: z.string().optional(),
+  cnpj: z.string().optional(),
   senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres."),
-  tipo: z.enum(['consumidor', 'produtor'], { message: 'Tipo de perfil é obrigatório.' }),
+  tipo: z.enum(['consumidor', 'produtor', 'restaurante'], { message: 'Tipo de perfil é obrigatório.' }),
+  nomeEstabelecimento: z.string().optional(),
+  telefone: z.string().optional(),
+  whatsapp: z.string().optional(),
+  localizacao: z.string().optional(),
+  categoriasProdutosInteresse: z.array(z.string()).optional(),
+}).refine((data) => {
+  if (data.tipo === 'restaurante') return !!data.cnpj;
+  return !!data.cpf;
+}, {
+  message: "CPF é obrigatório para usuários e CNPJ para restaurantes.",
+  path: ["cpf"]
 });
 
 export async function POST(request: Request) {
@@ -45,19 +56,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const { nome, email, cpf, senha, tipo } = validation.data;
+    const { nome, email, cpf, cnpj, senha, tipo, nomeEstabelecimento, telefone, whatsapp, localizacao, categoriasProdutosInteresse } = validation.data;
 
-    // 1. Verificar Duplicidade (E-mail e CPF) em ambas as coleções
-    const existingConsumidor = await Consumidor.findOne({ $or: [{ email }, { cpf }] });
-    const existingProdutor = await Produtor.findOne({ $or: [{ email }, { cpf }] });
-    const existingUser = existingConsumidor || existingProdutor;
+    // 1. Verificar Duplicidade (E-mail, CPF e CNPJ) em todas as coleções
+    const existingConsumidor = await Consumidor.findOne({ $or: [{ email }, { cpf: cpf || 'non-existent' }] });
+    const existingProdutor = await Produtor.findOne({ $or: [{ email }, { cpf: cpf || 'non-existent' }] });
+    const existingRestaurante = await Restaurante.findOne({ $or: [{ email }, { cnpj: cnpj || 'non-existent' }] });
+
+    const existingUser = existingConsumidor || existingProdutor || existingRestaurante;
 
     if (existingUser) {
       if (existingUser.email === email) {
         return NextResponse.json({ error: 'E-mail já cadastrado.' }, { status: 409 });
       }
-      if (existingUser.cpf === cpf) {
+      // @ts-ignore - access safe because of the Model types
+      if (cpf && (existingUser.cpf === cpf)) {
         return NextResponse.json({ error: 'CPF já cadastrado.' }, { status: 409 });
+      }
+      // @ts-ignore
+      if (cnpj && (existingUser.cnpj === cnpj)) {
+        return NextResponse.json({ error: 'CNPJ já cadastrado.' }, { status: 409 });
       }
     }
 
@@ -66,14 +84,26 @@ export async function POST(request: Request) {
     const senhaHash = await bcrypt.hash(senha, salt);
 
     // 3. Salvar no modelo apropriado baseado no tipo
-    const Model = tipo === 'produtor' ? Produtor : Consumidor;
-    const newUser = await Model.create({
-      nome,
-      email,
-      cpf,
-      senhaHash,
-      tipo,
-    });
+    let Model;
+    let userData: any = { nome, email, senhaHash, tipo };
+
+    if (tipo === 'produtor') {
+      Model = Produtor;
+      userData.cpf = cpf;
+    } else if (tipo === 'restaurante') {
+      Model = Restaurante;
+      userData.cnpj = cnpj;
+      userData.nomeEstabelecimento = nomeEstabelecimento;
+      userData.telefone = telefone;
+      userData.whatsapp = whatsapp;
+      userData.localizacao = localizacao;
+      userData.categoriasProdutosInteresse = categoriasProdutosInteresse;
+    } else {
+      Model = Consumidor;
+      userData.cpf = cpf;
+    }
+
+    const newUser: any = await Model.create(userData);
 
     // 4. Retorna a resposta de sucesso
     return NextResponse.json(
@@ -83,18 +113,30 @@ export async function POST(request: Request) {
           id: newUser._id,
           nome: newUser.nome,
           email: newUser.email,
-          cpf: newUser.cpf,
+          cpf: newUser.cpf || null,
+          cnpj: newUser.cnpj || null,
           tipo: newUser.tipo,
         }
       },
       { status: 201 }
     );
 
-  } catch (error) {
-    console.error("Erro ao cadastrar consumidor:", error);
-    // Erros de validação do Mongoose ou outros
+  } catch (error: any) {
+    console.error("DEBUG: Full error producing user:", error);
+
+    // Mongoose duplicate key error
+    if (error.code === 11000) {
+      return NextResponse.json({ error: 'E-mail ou CPF já cadastrado no sistema.' }, { status: 409 });
+    }
+
+    // Erros de validação do Mongoose
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((val: any) => val.message);
+      return NextResponse.json({ error: 'Erro de validação dos dados.', details: messages }, { status: 400 });
+    }
+
     return NextResponse.json(
-      { error: 'Erro interno do servidor ao cadastrar.', details: error instanceof Error ? error.message : String(error) },
+      { error: 'Erro interno do servidor ao cadastrar.', details: error.message || String(error) },
       { status: 500 }
     );
   }

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface OrderItem {
     produtoId: string;
@@ -24,6 +26,8 @@ interface Order {
 }
 
 export default function ProdutorPedidosPage() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -34,8 +38,10 @@ export default function ProdutorPedidosPage() {
     const [cancelReason, setCancelReason] = useState("");
 
     const fetchOrders = async () => {
+        if (!user) return;
+
         try {
-            const res = await fetch("/api/orders?produtorId=produtor_123");
+            const res = await fetch(`/api/orders?produtorId=${user.id}`);
             const data = await res.json();
             setOrders(data);
         } catch (error) {
@@ -46,6 +52,16 @@ export default function ProdutorPedidosPage() {
     };
 
     useEffect(() => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+
+        if (user.tipo !== 'produtor') {
+            router.push('/dashboard');
+            return;
+        }
+
         // Initial fetch
         fetchOrders();
 
@@ -56,7 +72,7 @@ export default function ProdutorPedidosPage() {
 
         // Cleanup interval on component unmount
         return () => clearInterval(intervalId);
-    }, []);
+    }, [user, router]);
 
     const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
         setUpdatingId(orderId);

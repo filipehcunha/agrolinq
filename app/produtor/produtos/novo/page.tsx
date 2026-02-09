@@ -1,14 +1,28 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { fetchWithAuth } from "@/lib/fetchWithAuth";
 
 export default function NovoProdutoPage() {
     const router = useRouter();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        if (user.tipo !== 'produtor') {
+            router.push('/dashboard');
+            return;
+        }
+    }, [user, router]);
 
     const [formData, setFormData] = useState({
         nome: "",
@@ -26,19 +40,23 @@ export default function NovoProdutoPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!user) return;
+
         setLoading(true);
         setError("");
 
         try {
-            // Mock Produtor ID for now
+            const sanitizedPrice = formData.preco.toString().replace(',', '.');
+
             const payload = {
                 ...formData,
-                preco: Number(formData.preco),
+                preco: Number(sanitizedPrice),
                 estoque: Number(formData.estoque),
-                produtorId: "produtor_123", // Fixed ID for MVP
+                produtorId: user.id, // Dynamic from auth
             };
 
-            const res = await fetch("/api/products", {
+            const res = await fetchWithAuth("/api/products", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

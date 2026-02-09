@@ -5,6 +5,7 @@ import * as z from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Consumidor from '@/models/Consumidor';
 import Produtor from '@/models/Produtor';
+import Restaurante from '@/models/Restaurante';
 
 const loginSchema = z.object({
     email: z.string().email('E-mail inválido.'),
@@ -38,13 +39,20 @@ export async function POST(request: Request) {
 
         const { email, senha } = validation.data;
 
-        // Buscar usuário em ambas as coleções
-        let user = await Consumidor.findOne({ email });
-        let userType = 'consumidor';
+        // Buscar usuário priorizando perfis específicos (Restaurante, Produtor)
+        let user = await Restaurante.findOne({ email });
+        let userType = 'restaurante';
 
         if (!user) {
             user = await Produtor.findOne({ email });
             userType = 'produtor';
+        }
+
+        if (!user) {
+            user = await Consumidor.findOne({ email });
+            if (user) {
+                userType = user.tipo || 'consumidor'; // Pode ser 'admin' ou 'consumidor'
+            }
         }
 
         if (!user) {

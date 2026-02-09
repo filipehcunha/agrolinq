@@ -1,0 +1,54 @@
+{
+  "consumidors": [
+    {
+      "_id": "693c80ba6a9c7135640a6665",
+      "nome": "Filipe Hermenegildo Da Cunha",
+      "email": "contatofilipehcunha@gmail.com"
+    },
+    {
+      "_id": "6942a24f65799a1a73c06f8e",
+      "nome": "aline ribeiro",
+      "email": "aline@gmail.com"
+    },
+    {
+      "_id": "6978ff59e9a0cc08e7232b20",
+      "nome": "filipe cunha",
+      "email": "consumidor@consumidor.com",
+      "tipo": "consumidor"
+    },
+    {
+      "_id": "698959ff0471659c5ac306ca",
+      "nome": "Administrador",
+      "email": "admin@admin.com",
+      "tipo": "admin"
+    },
+    {
+      "_id": "698964779f76e943f4a330b1",
+      "nome": "Filipe Hermenegildo Da Cunha",
+      "email": "email@email.com",
+      "tipo": "consumidor"
+    }
+  ],
+  "produtors": [
+    {
+      "_id": "6978ffcbe9a0cc08e7232b2a",
+      "nome": "jose roberto",
+      "email": "produtor@produtor.com",
+      "tipo": "produtor"
+    },
+    {
+      "_id": "698966b7cb9124d42028a99f",
+      "nome": "adalberto",
+      "email": "produtoradalberto@email.com",
+      "tipo": "produtor"
+    }
+  ],
+  "restaurantes": [
+    {
+      "_id": "698969cccb9124d42028aa4c",
+      "nome": "alberto lima",
+      "email": "restaurante@restaurante.com",
+      "tipo": "restaurante"
+    }
+  ]
+}

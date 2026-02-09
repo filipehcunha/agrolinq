@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { useAuth } from '@/context/AuthContext';
 
 const PRIMARY_COLOR = '#22c55e';
 const BG_COLOR = '#f8fafc';
@@ -22,6 +23,7 @@ type FormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login } = useAuth();
     const [message, setMessage] = useState('');
     const [isError, setIsError] = useState(false);
 
@@ -66,9 +68,16 @@ export default function LoginPage() {
             setIsError(false);
             setMessage('Login realizado com sucesso! Redirecionando...');
 
+            // Save user to AuthContext
+            login(responseData.user);
+
             // Redirecionar baseado no tipo de usuário
             const userType = (responseData as { user?: { tipo?: string } }).user?.tipo;
-            const redirectPath = userType === 'produtor' ? '/produtor' : '/dashboard';
+            let redirectPath = '/dashboard';
+
+            if (userType === 'produtor') redirectPath = '/produtor';
+            else if (userType === 'restaurante') redirectPath = '/dashboard';
+            else if (userType === 'admin') redirectPath = '/admin';
 
             setTimeout(() => {
                 router.push(redirectPath);

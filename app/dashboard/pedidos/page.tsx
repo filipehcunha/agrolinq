@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface OrderItem {
     produtoId: string;
@@ -26,38 +28,48 @@ interface Produtor {
     _id: string;
     nome: string;
     email: string;
+    seloVerde?: boolean;
 }
 
 export default function ConsumidorPedidosPage() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [produtores, setProdutores] = useState<Record<string, Produtor>>({});
     const [loading, setLoading] = useState(true);
 
     const fetchOrders = async () => {
+        if (!user) return;
+
         try {
-            const res = await fetch("/api/orders?consumidorId=consumidor_123");
+            const res = await fetch(`/api/orders?consumidorId=${user.id}`);
             const data = await res.json();
-            setOrders(data);
+            if (Array.isArray(data)) {
+                setOrders(data);
 
-            // Fetch producer details for each unique produtorId
-            const uniqueProdutorIds = [...new Set(data.map((o: Order) => o.produtorId))] as string[];
-            const produtorData: Record<string, Produtor> = {};
+                // Fetch producer details for each unique produtorId
+                const uniqueProdutorIds = [...new Set(data.map((o: Order) => o.produtorId))] as string[];
+                const produtorData: Record<string, Produtor> = {};
 
-            await Promise.all(
-                uniqueProdutorIds.map(async (id) => {
-                    try {
-                        const res = await fetch(`/api/producers/${id}`);
-                        if (res.ok) {
-                            const produtor = await res.json();
-                            produtorData[id] = produtor;
+                await Promise.all(
+                    uniqueProdutorIds.map(async (id) => {
+                        try {
+                            const res = await fetch(`/api/producers/${id}`);
+                            if (res.ok) {
+                                const produtor = await res.json();
+                                produtorData[id] = produtor;
+                            }
+                        } catch (error) {
+                            console.error(`Erro ao buscar produtor ${id}:`, error);
                         }
-                    } catch (error) {
-                        console.error(`Erro ao buscar produtor ${id}:`, error);
-                    }
-                })
-            );
+                    })
+                );
 
-            setProdutores(produtorData);
+                setProdutores(produtorData);
+            } else {
+                console.error("Orders API did not return an array", data);
+                setOrders([]);
+            }
         } catch (error) {
             console.error("Erro ao carregar pedidos:", error);
         } finally {
@@ -66,6 +78,11 @@ export default function ConsumidorPedidosPage() {
     };
 
     useEffect(() => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+
         // Initial fetch
         fetchOrders();
 
@@ -76,7 +93,7 @@ export default function ConsumidorPedidosPage() {
 
         // Cleanup interval on component unmount
         return () => clearInterval(intervalId);
-    }, []);
+    }, [user, router]);
 
     const getStatusConfig = (status: Order["status"]) => {
         const configs = {
@@ -195,7 +212,16 @@ export default function ConsumidorPedidosPage() {
                                                 {produtor.nome.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="text-sm font-semibold text-gray-800">👨‍🌾 Vendedor: {produtor.nome}</p>
+                                                <p className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                                                    👨‍🌾 Vendedor: {produtor.nome}
+                                                    {produtor.seloVerde && (
+                                                        <span title="Produtor Certificado" className="text-green-600">
+                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                            </svg>
+                                                        </span>
+                                                    )}
+                                                </p>
                                                 <p className="text-xs text-gray-600">📧 {produtor.email}</p>
                                             </div>
                                         </div>

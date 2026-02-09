@@ -20,7 +20,9 @@ const FORM_FIELD_STYLE: CSSProperties = {
   display: 'block',
   width: '100%',
   padding: '0.65rem 1rem',
-  border: '1px solid #e5e7eb',
+  borderWidth: '1px',
+  borderStyle: 'solid',
+  borderColor: '#e5e7eb',
   borderRadius: '0.5rem',
   boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
   transition: 'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
@@ -36,12 +38,21 @@ const FOCUS_STYLE: CSSProperties = {
 const formSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório.'),
   email: z.string().email('E-mail inválido.').min(1, 'E-mail é obrigatório.'),
-  cpf: z
-    .string()
-    .min(1, 'CPF é obrigatório.')
-    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF inválido. Use o formato XXX.XXX.XXX-XX'),
+  cpf: z.string().optional(),
+  cnpj: z.string().optional(),
   senha: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
-  tipo: z.enum(['consumidor', 'produtor'], { message: 'Selecione o tipo de perfil.' }),
+  tipo: z.enum(['consumidor', 'produtor', 'restaurante'], { message: 'Selecione o tipo de perfil.' }),
+  nomeEstabelecimento: z.string().optional(),
+  telefone: z.string().optional(),
+  whatsapp: z.string().optional(),
+  localizacao: z.string().optional(),
+  categoriasProdutosInteresse: z.array(z.string()).optional(),
+}).refine((data) => {
+  if (data.tipo === 'restaurante') return !!data.cnpj;
+  return !!data.cpf;
+}, {
+  message: "Este campo é obrigatório.",
+  path: ["cpf"]
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -71,11 +82,21 @@ const FormInput = ({
   const { onChange, onBlur, name, ref } = register(id);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    if (mask && id === 'cpf') {
+    if (mask) {
       let value = event.target.value.replace(/\D/g, '');
-      value = value.replace(/(\d{3})(\d)/, '$1.$2');
-      value = value.replace(/(\d{3})(\d)/, '$1.$2');
-      value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      if (id === 'cpf') {
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d)/, '$1.$2');
+        value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+      } else if (id === 'cnpj') {
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+      } else if (id === 'telefone') {
+        value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+        value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+      }
       event.target.value = value;
     }
     onChange(event);
@@ -116,7 +137,7 @@ const FormInput = ({
         onChange={handleChange}
         style={{ ...FORM_FIELD_STYLE, ...(error ? { borderColor: ERROR_COLOR } : {}) }}
         placeholder={placeholder}
-        maxLength={id === 'cpf' ? 14 : undefined}
+        maxLength={id === 'cpf' ? 14 : id === 'cnpj' ? 18 : id === 'telefone' ? 15 : undefined}
       />
 
       {error && (
@@ -160,9 +181,18 @@ export default function CadastroPage() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    watch,
+    setValue,
+    getValues,
   } = useForm<FormData>({
     resolver: customResolver,
+    defaultValues: {
+      tipo: 'consumidor',
+      categoriasProdutosInteresse: []
+    }
   });
+
+  const selectedTipo = watch('tipo');
 
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
@@ -189,10 +219,10 @@ export default function CadastroPage() {
 
       setIsError(false);
       setMessage('Cadastro realizado com sucesso! Redirecionando...');
-      
+
       const userType = (responseData as { user?: { tipo?: string } }).user?.tipo || data.tipo;
       const redirectPath = userType === 'produtor' ? '/produtor' : '/dashboard';
-      
+
       setTimeout(() => {
         router.push(redirectPath);
       }, 1500);
@@ -376,6 +406,7 @@ export default function CadastroPage() {
                     <option value="">Selecione...</option>
                     <option value="consumidor">🛒 Consumidor - Quero comprar produtos</option>
                     <option value="produtor">🌾 Produtor - Quero vender meus produtos</option>
+                    <option value="restaurante">🥡 Restaurante - Compras para meu negócio</option>
                   </select>
                   {errors.tipo && (
                     <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: ERROR_COLOR }}>
@@ -383,6 +414,47 @@ export default function CadastroPage() {
                     </p>
                   )}
                 </div>
+
+                {/* Campos Dinâmicos baseado no Tipo */}
+                {selectedTipo === 'restaurante' ? (
+                  <>
+                    <FormInput id="cnpj" label="CNPJ" register={register} error={errors.cnpj} mask />
+                    <FormInput id="nomeEstabelecimento" label="Nome do Restaurante" register={register} error={errors.nomeEstabelecimento} placeholder="Ex: Cantina do Nonno" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <FormInput id="telefone" label="Telefone" register={register} error={errors.telefone} mask placeholder="(11) 99999-9999" />
+                      <FormInput id="whatsapp" label="WhatsApp" register={register} error={errors.whatsapp} mask placeholder="(11) 99999-9999" />
+                    </div>
+                    <FormInput id="localizacao" label="Endereço / Localização" register={register} error={errors.localizacao} placeholder="Rua, Número, Bairro, Cidade" />
+
+                    {/* Categorias de Interesse */}
+                    <div>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#374151', marginBottom: '0.5rem', display: 'block' }}>
+                        Categorias de Interesse
+                      </span>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        {['Vegetais', 'Frutas', 'Laticínios', 'Carnes', 'Grãos', 'Ovos'].map((cat) => (
+                          <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              value={cat}
+                              onChange={(e) => {
+                                const current = getValues('categoriasProdutosInteresse') || [];
+                                if (e.target.checked) {
+                                  setValue('categoriasProdutosInteresse', [...current, cat]);
+                                } else {
+                                  setValue('categoriasProdutosInteresse', current.filter((c) => c !== cat));
+                                }
+                              }}
+                            />
+                            {cat}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <FormInput id="cpf" label="CPF" register={register} error={errors.cpf} mask />
+                )}
 
                 {/* Mensagens */}
                 {message && (

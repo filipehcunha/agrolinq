@@ -39,12 +39,24 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    console.log("DEBUG: Creating order with payload:", JSON.stringify(body, null, 2));
+
+    // Validar campos obrigatórios
+    if (!body.consumidorId || !body.produtorId || !body.itens || !body.total) {
+      await session.abortTransaction();
+      return NextResponse.json(
+        { error: "Dados incompletos. Campos obrigatórios: consumidorId, produtorId, itens, total" },
+        { status: 400 }
+      );
+    }
+
     // Validate inventory for all items
     for (const item of body.itens) {
       const produto = await Produto.findById(item.produtoId).session(session);
 
       if (!produto) {
         await session.abortTransaction();
+        console.error(`DEBUG: Produto não encontrado: ${item.produtoId}`);
         return NextResponse.json(
           { error: `Produto ${item.nome} não encontrado` },
           { status: 404 }
@@ -82,11 +94,13 @@ export async function POST(req: Request) {
     }], { session });
 
     await session.commitTransaction();
+    console.log("DEBUG: Order created successfully:", order[0]._id);
     return NextResponse.json(order[0], { status: 201 });
 
   } catch (error) {
     await session.abortTransaction();
-    console.error("Error creating order:", error);
+    console.error("ERROR creating order:", error);
+    console.error("ERROR stack:", error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { error: "Erro ao criar pedido", details: String(error) },
       { status: 500 }

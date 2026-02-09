@@ -25,7 +25,7 @@ const ConsumidorSchema = new Schema({
   tipo: {
     type: String,
     default: 'consumidor',
-    enum: ['consumidor'],
+    enum: ['consumidor', 'admin'],
   },
   createdAt: {
     type: Date,

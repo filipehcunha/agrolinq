@@ -14,6 +14,7 @@ interface Produto {
   produtorId: string;
   unidade: string;
   estoque: number;
+  seloVerde?: boolean;
 }
 
 export default function ListaProdutos() {
@@ -29,16 +30,23 @@ export default function ListaProdutos() {
     fetch("/api/products")
       .then((res) => res.json())
       .then((data) => {
-        setProdutos(data);
+        if (Array.isArray(data)) {
+          setProdutos(data);
+        } else {
+          console.error("API did not return an array", data);
+          setProdutos([]);
+        }
         setLoading(false);
       })
       .catch((err) => {
         console.error("Erro ao carregar produtos:", err);
+        setProdutos([]);
         setLoading(false);
       });
   }, []);
 
   const produtosFiltrados = useMemo(() => {
+    if (!Array.isArray(produtos)) return [];
     return produtos
       .filter((produto) => {
         const matchTipo = filtroTipo ? produto.categoria === filtroTipo : true;
@@ -150,25 +158,38 @@ export default function ListaProdutos() {
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {produtosFiltrados.map((p) => (
               <div key={p._id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
-                <div className="h-48 bg-gray-100 relative">
-                  {p.imagemUrl ? (
-                    <img src={p.imagemUrl} alt={p.nome} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400 bg-gray-50">
-                      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <span className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-bold px-2 py-1 rounded-md shadow-sm">
-                    {p.categoria}
-                  </span>
-                </div>
+                <Link href={`/dashboard/produtos/${p._id}`}>
+                  <div className="h-48 bg-gray-100 relative cursor-pointer">
+                    {p.imagemUrl ? (
+                      <img src={p.imagemUrl} alt={p.nome} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-400 bg-gray-50">
+                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                    <span className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-bold px-2 py-1 rounded-md shadow-sm">
+                      {p.categoria}
+                    </span>
+                  </div>
+                </Link>
 
                 <div className="p-4 flex-1 flex flex-col">
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-800 text-lg mb-1">{p.nome}</h3>
-                    <p className="text-sm text-gray-500 mb-3">Produtor Local</p> {/* Future: Real producer name */}
+                    <Link href={`/dashboard/produtos/${p._id}`}>
+                      <h3 className="font-bold text-gray-800 text-lg mb-1 hover:text-green-600 transition-colors cursor-pointer">{p.nome}</h3>
+                    </Link>
+                    <div className="flex items-center gap-1 mb-3">
+                      <p className="text-sm text-gray-500">Produtor Local</p>
+                      {p.seloVerde && (
+                        <span title="Produtor Certificado" className="text-green-600">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                     {p.estoque > 0 ? (
                       <p className="text-xs text-green-600 font-medium">
                         {p.estoque} {p.unidade} disponíveis

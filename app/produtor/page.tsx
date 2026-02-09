@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface Produto {
     _id: string;
@@ -13,6 +15,12 @@ interface Produto {
     imagemUrl?: string;
 }
 
+interface ProdutorFull {
+    _id: string;
+    nome: string;
+    seloVerde: boolean;
+}
+
 interface Order {
     _id: string;
     status: string;
@@ -20,90 +28,175 @@ interface Order {
 }
 
 function MeusProdutosTable() {
+    const { user } = useAuth();
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const [produtorInfo, setProdutorInfo] = useState<ProdutorFull | null>(null);
+
     useEffect(() => {
-        // Mock produtorId for MVP
-        fetch("/api/products?produtorId=produtor_123")
+        if (!user) return;
+
+        // Carregar produtos
+        fetch(`/api/products?produtorId=${user.id}`)
             .then(res => res.json())
             .then(data => {
-                setProdutos(data);
+                if (Array.isArray(data)) {
+                    setProdutos(data);
+                } else {
+                    console.error("API products missing array", data);
+                    setProdutos([]);
+                }
                 setLoading(false);
             })
             .catch(err => {
                 console.error("Erro ao carregar produtos do produtor", err);
+                setProdutos([]);
                 setLoading(false);
             });
-    }, []);
+
+        // Carregar infos do produtor (para ver selo verde atualizado)
+        fetch(`/api/producers/${user.id}`) // Assumindo que existe endpoint individual ou usar o de lista filtrado
+            .then(res => res.json())
+            .then(data => {
+                // Fallback se a API retornar array ou objeto direto
+                const info = Array.isArray(data) ? data[0] : data;
+                setProdutorInfo(info);
+            })
+            .catch(err => console.error("Erro ao carregar info do produtor", err));
+
+    }, [user]);
+
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+
+        setDeletingId(id);
+        try {
+            const res = await fetch(`/api/products/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'x-user-id': user?.id || '',
+                    'x-user-tipo': user?.tipo || ''
+                }
+            });
+
+            if (res.ok) {
+                setProdutos(prev => prev.filter(p => p._id !== id));
+            } else {
+                alert("Erro ao excluir produto");
+            }
+        } catch (error) {
+            console.error("Erro ao excluir:", error);
+            alert("Erro ao excluir produto");
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 className="text-lg font-bold text-gray-800">Meus Produtos</h3>
-                <Link
-                    href="/produtor/produtos/novo"
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Novo Produto
-                </Link>
-            </div>
-            <div className="p-6">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="border-b border-gray-100">
-                                <th className="pb-4 font-medium text-gray-500 text-sm">Produto</th>
-                                <th className="pb-4 font-medium text-gray-500 text-sm">Categoria</th>
-                                <th className="pb-4 font-medium text-gray-500 text-sm">Preço</th>
-                                <th className="pb-4 font-medium text-gray-500 text-sm">Estoque</th>
-                                <th className="pb-4 font-medium text-gray-500 text-sm text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={5} className="py-8 text-center text-gray-400">Carregando...</td>
+        <div className="space-y-6">
+            {/* Banner Selo Verde */}
+            {produtorInfo?.seloVerde && (
+                <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl p-6 text-white shadow-lg flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-white/20 p-3 rounded-full">
+                            <span className="text-4xl">🏅</span>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold">Produtor Certificado com Selo Verde!</h2>
+                            <p className="text-green-100 mt-1">Seus produtos agora têm destaque especial para os consumidores.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-gray-800">Meus Produtos</h3>
+                    <Link
+                        href="/produtor/produtos/novo"
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Novo Produto
+                    </Link>
+                </div>
+                <div className="p-6">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-gray-100">
+                                    <th className="pb-4 font-medium text-gray-500 text-sm">Produto</th>
+                                    <th className="pb-4 font-medium text-gray-500 text-sm">Categoria</th>
+                                    <th className="pb-4 font-medium text-gray-500 text-sm">Preço</th>
+                                    <th className="pb-4 font-medium text-gray-500 text-sm">Estoque</th>
+                                    <th className="pb-4 font-medium text-gray-500 text-sm text-right">Ações</th>
                                 </tr>
-                            ) : produtos.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="py-8 text-center text-gray-400">Nenhum produto cadastrado.</td>
-                                </tr>
-                            ) : (
-                                produtos.map((p) => (
-                                    <tr key={p._id} className="hover:bg-green-50/50 transition-colors">
-                                        <td className="py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                                                    {p.imagemUrl ? (
-                                                        <img src={p.imagemUrl} alt={p.nome} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                            </svg>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <span className="font-medium text-gray-800">{p.nome}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 text-sm text-gray-600">{p.categoria}</td>
-                                        <td className="py-4 text-sm font-medium text-gray-800">R$ {p.preco.toFixed(2)} / {p.unidade}</td>
-                                        <td className="py-4 text-sm text-gray-600">{p.estoque} {p.unidade}</td>
-                                        <td className="py-4 text-right">
-                                            <Link href="/produtor/produtos" className="text-green-600 hover:text-green-700 transition-colors p-1 text-sm font-medium">
-                                                Gerenciar
-                                            </Link>
-                                        </td>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={5} className="py-8 text-center text-gray-400">Carregando...</td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : produtos.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="py-8 text-center text-gray-400">Nenhum produto cadastrado.</td>
+                                    </tr>
+                                ) : (
+                                    produtos.map((p) => (
+                                        <tr key={p._id} className="hover:bg-green-50/50 transition-colors">
+                                            <td className="py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
+                                                        {p.imagemUrl ? (
+                                                            <img src={p.imagemUrl} alt={p.nome} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                                </svg>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className="font-medium text-gray-800">{p.nome}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 text-sm text-gray-600">{p.categoria}</td>
+                                            <td className="py-4 text-sm font-medium text-gray-800">R$ {p.preco.toFixed(2)} / {p.unidade}</td>
+                                            <td className="py-4 text-sm text-gray-600">{p.estoque} {p.unidade}</td>
+                                            <td className="py-4 text-right">
+                                                <div className="flex gap-2 justify-end">
+                                                    <Link href={`/produtor/produtos/${p._id}`} className="p-1 text-gray-400 hover:text-green-600 transition-colors" title="Editar">
+                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                        </svg>
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleDelete(p._id)}
+                                                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                                        title="Excluir"
+                                                        disabled={deletingId === p._id}
+                                                    >
+                                                        {deletingId === p._id ? (
+                                                            <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -111,14 +204,23 @@ function MeusProdutosTable() {
 }
 
 export default function ProdutorDashboard() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loadingOrders, setLoadingOrders] = useState(true);
     const [menuOpen, setMenuOpen] = useState(false);
     const [showSeloVerdeModal, setShowSeloVerdeModal] = useState(false);
 
     useEffect(() => {
-        // Fetch real orders data
-        fetch("/api/orders?produtorId=produtor_123")
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        if (user.tipo !== 'produtor') {
+            router.push('/dashboard');
+            return;
+        }
+        fetch(`/api/orders?produtorId=${user.id}`)
             .then(res => res.json())
             .then(data => {
                 setOrders(data);
@@ -409,18 +511,15 @@ export default function ProdutorDashboard() {
                                 >
                                     Fechar
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        alert("Funcionalidade em desenvolvimento! Em breve você poderá enviar sua solicitação de certificação.");
-                                        setShowSeloVerdeModal(false);
-                                    }}
+                                <Link
+                                    href="/produtor/selo-verde/solicitar"
                                     className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     Solicitar Certificação
-                                </button>
+                                </Link>
                             </div>
 
                             {/* Note */}

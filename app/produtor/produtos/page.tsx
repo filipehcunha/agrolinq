@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface Produto {
     _id: string;
@@ -14,18 +16,31 @@ interface Produto {
 }
 
 export default function ProdutorProdutosPage() {
+    const { user } = useAuth();
+    const router = useRouter();
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editEstoque, setEditEstoque] = useState("");
 
     useEffect(() => {
+        // Check if user is logged in and is a producer
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        if (user.tipo !== 'produtor') {
+            router.push('/dashboard');
+            return;
+        }
         fetchProdutos();
-    }, []);
+    }, [user, router]);
 
     const fetchProdutos = async () => {
+        if (!user) return;
+
         try {
-            const res = await fetch("/api/products?produtorId=produtor_123");
+            const res = await fetch(`/api/products?produtorId=${user.id}`);
             const data = await res.json();
             setProdutos(data);
         } catch (error) {

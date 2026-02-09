@@ -32,6 +32,12 @@ const ProdutorSchema = new Schema({
   fotoFazenda: { type: String },
   telefone: { type: String },
   whatsapp: { type: String },
+  // Geolocalização
+  latitude: { type: Number },
+  longitude: { type: Number },
+  // Selo Verde
+  seloVerde: { type: Boolean, default: false },
+  seloVerdeAprovadoEm: { type: Date },
   createdAt: {
     type: Date,
     default: Date.now,
