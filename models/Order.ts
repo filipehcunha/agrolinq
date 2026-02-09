@@ -19,6 +19,24 @@ export interface IOrder extends Document {
   total: number;
   status: OrderStatus;
   produtorNotificado: boolean;
+
+  avaliacao?: {
+    nota: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: true,
+    },
+    comentario: {
+      type: String,
+      maxlength: 500,
+    },
+    avaliadoEm: {
+      type: Date,
+      default: Date.now,
+    },
+  };
+  
   canceladoPor?: "produtor" | "consumidor";
   motivoCancelamento?: string;
   canceladoEm?: Date;
