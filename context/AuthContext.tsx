@@ -21,19 +21,26 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        if (typeof window !== "undefined") {
+            const savedUser = localStorage.getItem("agrolinq_user");
+            if (savedUser) {
+                try {
+                    return JSON.parse(savedUser);
+                } catch {
+                    localStorage.removeItem("agrolinq_user");
+                }
+            }
+        }
+        return null;
+    });
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const savedUser = localStorage.getItem("agrolinq_user");
-        if (savedUser) {
-            try {
-                setUser(JSON.parse(savedUser));
-            } catch {
-                localStorage.removeItem("agrolinq_user");
-            }
-        }
-        setIsLoading(false);
+        // Use timeout to move state update out of the synchronous effect body
+        // and avoid cascading render warnings during hydration.
+        const timer = setTimeout(() => setIsLoading(false), 0);
+        return () => clearTimeout(timer);
     }, []);
 
     const login = (userData: User) => {

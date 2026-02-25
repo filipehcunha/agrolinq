@@ -75,7 +75,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
 
-        let query: Record<string, unknown> = {};
+        const query: Record<string, unknown> = {};
 
         if (userTipo === 'admin') {
             // Admin vê todas solicitações

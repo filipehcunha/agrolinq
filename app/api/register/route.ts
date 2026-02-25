@@ -69,11 +69,9 @@ export async function POST(request: Request) {
       if (existingUser.email === email) {
         return NextResponse.json({ error: 'E-mail já cadastrado.' }, { status: 409 });
       }
-      // @ts-ignore - access safe because of the Model types
       if (cpf && (existingUser.cpf === cpf)) {
         return NextResponse.json({ error: 'CPF já cadastrado.' }, { status: 409 });
       }
-      // @ts-ignore
       if (cnpj && (existingUser.cnpj === cnpj)) {
         return NextResponse.json({ error: 'CNPJ já cadastrado.' }, { status: 409 });
       }
@@ -85,7 +83,7 @@ export async function POST(request: Request) {
 
     // 3. Salvar no modelo apropriado baseado no tipo
     let Model;
-    let userData: any = { nome, email, senhaHash, tipo };
+    const userData: Record<string, unknown> = { nome, email, senhaHash, tipo };
 
     if (tipo === 'produtor') {
       Model = Produtor;
@@ -103,7 +101,7 @@ export async function POST(request: Request) {
       userData.cpf = cpf;
     }
 
-    const newUser: any = await Model.create(userData);
+    const newUser = await Model.create(userData);
 
     // 4. Retorna a resposta de sucesso
     return NextResponse.json(
@@ -121,22 +119,24 @@ export async function POST(request: Request) {
       { status: 201 }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("DEBUG: Full error producing user:", error);
 
+    const err = error as { code?: number; name?: string; errors?: Record<string, { message: string }>; message?: string };
+
     // Mongoose duplicate key error
-    if (error.code === 11000) {
+    if (err.code === 11000) {
       return NextResponse.json({ error: 'E-mail ou CPF já cadastrado no sistema.' }, { status: 409 });
     }
 
     // Erros de validação do Mongoose
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((val: any) => val.message);
+    if (err.name === 'ValidationError' && err.errors) {
+      const messages = Object.values(err.errors).map((val) => val.message);
       return NextResponse.json({ error: 'Erro de validação dos dados.', details: messages }, { status: 400 });
     }
 
     return NextResponse.json(
-      { error: 'Erro interno do servidor ao cadastrar.', details: error.message || String(error) },
+      { error: 'Erro interno do servidor ao cadastrar.', details: err.message || String(error) },
       { status: 500 }
     );
   }

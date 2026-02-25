@@ -15,6 +15,8 @@ interface Produto {
   unidade: string;
   estoque: number;
   seloVerde?: boolean;
+  distanciaKm?: number;
+  nomeProdutor?: string;
 }
 
 export default function ListaProdutos() {
@@ -26,27 +28,88 @@ export default function ListaProdutos() {
   const [filtroTipo, setFiltroTipo] = useState("");
   const [filtroPrecoMax, setFiltroPrecoMax] = useState("");
 
+  // Estados para proximidade
+  const [ordenarProximidade, setOrdenarProximidade] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [localizando, setLocalizando] = useState(false);
+
+  const fetchProdutos = async () => {
+    setLoading(true);
+    try {
+      let url = "/api/products";
+      const params = new URLSearchParams();
+
+      if (ordenarProximidade && userLocation) {
+        url = "/api/products/nearby";
+        params.append("lat", userLocation.lat.toString());
+        params.append("lng", userLocation.lng.toString());
+        params.append("radius", "100"); // 100km radius
+        if (filtroTipo) params.append("categoria", filtroTipo);
+        if (filtroPrecoMax) params.append("maxPrice", filtroPrecoMax);
+      }
+
+      const queryString = params.toString();
+      const finalUrl = queryString ? `${url}?${queryString}` : url;
+
+      const res = await fetch(finalUrl);
+      const data = await res.json();
+
+      let produtosData = [];
+      if (Array.isArray(data)) {
+        produtosData = data;
+      } else if (data && Array.isArray(data.produtos)) {
+        produtosData = data.produtos;
+      } else {
+        console.error("API did not return an array", data);
+      }
+
+      setProdutos(produtosData);
+    } catch (err) {
+      console.error("Erro ao carregar produtos:", err);
+      setProdutos([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetch("/api/products")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProdutos(data);
-        } else {
-          console.error("API did not return an array", data);
-          setProdutos([]);
-        }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Erro ao carregar produtos:", err);
-        setProdutos([]);
-        setLoading(false);
-      });
-  }, []);
+    fetchProdutos();
+  }, [ordenarProximidade, userLocation]);
+
+  const handleToggleProximidade = () => {
+    if (!ordenarProximidade) {
+      if (!userLocation) {
+        setLocalizando(true);
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setUserLocation({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+            setOrdenarProximidade(true);
+            setLocalizando(false);
+          },
+          (error) => {
+            console.error("Erro ao obter localização:", error);
+            setNotification("Não foi possível obter sua localização.");
+            setTimeout(() => setNotification(""), 3000);
+            setLocalizando(false);
+          }
+        );
+      } else {
+        setOrdenarProximidade(true);
+      }
+    } else {
+      setOrdenarProximidade(false);
+    }
+  };
 
   const produtosFiltrados = useMemo(() => {
     if (!Array.isArray(produtos)) return [];
+
+    // Se estiver usando a API de proximidade, os filtros já foram aplicados no backend
+    if (ordenarProximidade && userLocation) return produtos;
+
     return produtos
       .filter((produto) => {
         const matchTipo = filtroTipo ? produto.categoria === filtroTipo : true;
@@ -55,7 +118,7 @@ export default function ListaProdutos() {
           : true;
         return matchTipo && matchPreco;
       });
-  }, [produtos, filtroTipo, filtroPrecoMax]);
+  }, [produtos, filtroTipo, filtroPrecoMax, ordenarProximidade, userLocation]);
 
   const tiposDisponiveis = Array.from(
     new Set(produtos.map((p) => p.categoria))
@@ -107,8 +170,8 @@ export default function ListaProdutos() {
         )}
 
         {/* Filtros */}
-        <div className="mb-8 p-6 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-6 items-end">
-          <div className="flex-1 min-w-[200px]">
+        <div className="mb-8 p-6 bg-white rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+          <div className="col-span-1">
             <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-2">
               Categoria
             </label>
@@ -127,7 +190,7 @@ export default function ListaProdutos() {
             </select>
           </div>
 
-          <div className="flex-1 min-w-[200px]">
+          <div className="col-span-1">
             <label htmlFor="preco" className="block text-sm font-medium text-gray-700 mb-2">
               Preço Máximo (R$)
             </label>
@@ -141,12 +204,35 @@ export default function ListaProdutos() {
             />
           </div>
 
-          <button
-            onClick={() => { setFiltroTipo(""); setFiltroPrecoMax("") }}
-            className="px-4 py-2.5 text-sm font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            Limpar Filtros
-          </button>
+          <div className="col-span-1">
+            <button
+              onClick={handleToggleProximidade}
+              disabled={localizando}
+              className={`w-full px-4 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-sm border ${ordenarProximidade
+                  ? "bg-green-100 border-green-200 text-green-700"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
+            >
+              {localizando ? (
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+              {ordenarProximidade ? "Ordenado por Proximidade" : "Ordenar por Proximidade"}
+            </button>
+          </div>
+
+          <div className="col-span-1">
+            <button
+              onClick={() => { setFiltroTipo(""); setFiltroPrecoMax(""); setOrdenarProximidade(false); }}
+              className="w-full px-4 py-2.5 text-sm font-medium text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-transparent"
+            >
+              Limpar Filtros
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -157,7 +243,15 @@ export default function ListaProdutos() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {produtosFiltrados.map((p) => (
-              <div key={p._id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col">
+              <div key={p._id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col relative">
+                {p.distanciaKm !== undefined && (
+                  <div className="absolute top-2 left-2 z-10 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-md flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                    {p.distanciaKm} km
+                  </div>
+                )}
                 <Link href={`/dashboard/produtos/${p._id}`}>
                   <div className="h-48 bg-gray-100 relative cursor-pointer">
                     {p.imagemUrl ? (
@@ -178,12 +272,12 @@ export default function ListaProdutos() {
                 <div className="p-4 flex-1 flex flex-col">
                   <div className="flex-1">
                     <Link href={`/dashboard/produtos/${p._id}`}>
-                      <h3 className="font-bold text-gray-800 text-lg mb-1 hover:text-green-600 transition-colors cursor-pointer">{p.nome}</h3>
+                      <h3 className="font-bold text-gray-800 text-lg mb-1 hover:text-green-600 transition-colors cursor-pointer line-clamp-1">{p.nome}</h3>
                     </Link>
-                    <div className="flex items-center gap-1 mb-3">
-                      <p className="text-sm text-gray-500">Produtor Local</p>
+                    <div className="flex items-center gap-1 mb-2">
+                      <p className="text-sm text-gray-500 truncate">{p.nomeProdutor || "Produtor Local"}</p>
                       {p.seloVerde && (
-                        <span title="Produtor Certificado" className="text-green-600">
+                        <span title="Produtor Certificado" className="text-green-600 shrink-0">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>

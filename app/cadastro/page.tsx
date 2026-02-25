@@ -370,7 +370,6 @@ export default function CadastroPage() {
                   error={errors.email}
                   autoComplete="email"
                 />
-                <FormInput id="cpf" label="CPF" register={register} error={errors.cpf} mask />
                 <FormInput
                   id="senha"
                   type="password"

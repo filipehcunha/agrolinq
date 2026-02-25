@@ -19,10 +19,11 @@ test('deve cadastrar um novo usuário com sucesso', async ({ page }) => {
     await page.fill('input[id="cpf"]', cpf);
     await page.fill('input[id="senha"]', 'senha123');
 
+
     // 3. Submeter o formulário
     await page.click('button[type="submit"]');
 
     // 4. Verificar mensagem de sucesso
     // A mensagem de sucesso aparece em um container verde
-    await expect(page.getByText('Cadastro realizado com sucesso!')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Cadastro realizado com sucesso! Redirecionando...')).toBeVisible({ timeout: 10000 });
 });
