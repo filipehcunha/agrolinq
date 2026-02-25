@@ -35,8 +35,8 @@ export default function AdminSelosVerdesPage() {
             const res = await fetchWithAuth('/api/selo-verde?status=pendente');
             const data = await res.json();
             setSolicitacoes(data);
-        } catch (err) {
-            console.error("Erro ao carregar solicitações:", err);
+        } catch (_err) {
+            console.error("Erro ao carregar solicitações:", _err);
         } finally {
             setLoading(false);
         }
@@ -56,7 +56,7 @@ export default function AdminSelosVerdesPage() {
                 const error = await res.json();
                 alert(error.error || 'Erro ao aprovar selo');
             }
-        } catch (err) {
+        } catch (_err) {
             alert('Erro ao aprovar selo');
         } finally {
             setActionLoading(null);
@@ -82,7 +82,7 @@ export default function AdminSelosVerdesPage() {
                 const error = await res.json();
                 alert(error.error || 'Erro ao rejeitar');
             }
-        } catch (err) {
+        } catch (_err) {
             alert('Erro ao rejeitar');
         } finally {
             setActionLoading(null);

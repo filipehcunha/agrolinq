@@ -7,7 +7,7 @@ import Produto from '@/models/Produto';
 interface ProdutoLean {
     _id: unknown;
     produtorId: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export async function GET(request: Request) {
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
             // Fetch producers to check Green Seal status
             const produtores = await Produtor.find({ _id: { $in: producerIds } }).select('seloVerde').lean();
             // Create a map for quick lookup
-            producerMap = new Map(produtores.map((p: any) => [p._id.toString(), p.seloVerde]));
+            producerMap = new Map(produtores.map((p: { _id: { toString(): string }; seloVerde: boolean }) => [p._id.toString(), p.seloVerde]));
         } catch (prodError) {
             console.error("DEBUG: Error fetching producers for enrichment:", prodError);
             // We continue without enrichment if producer fetch fails to avoid 500
@@ -57,12 +57,11 @@ export async function GET(request: Request) {
 
         console.log(`DEBUG: Returning ${produtosComSelo.length} enriched products`);
         return NextResponse.json(produtosComSelo);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("DEBUG: CRITICAL ERROR fetching products:", error);
 
         // Ensure we always return a valid JSON object
         const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : 'No stack trace';
 
         return new Response(JSON.stringify({
             error: 'Erro interno ao buscar produtos',
@@ -92,12 +91,13 @@ export async function POST(request: Request) {
 
         const produto = await Produto.create(body);
         return NextResponse.json(produto, { status: 201 });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("DEBUG: Error creating product:", error);
 
         // Handle Mongoose Validation Errors gracefully
-        if (error.name === 'ValidationError') {
-            const messages = Object.values(error.errors).map((val: any) => val.message);
+        if (error && typeof error === 'object' && 'name' in error && error.name === 'ValidationError') {
+            const err = error as unknown as { errors: Record<string, { message: string }> };
+            const messages = Object.values(err.errors).map((val) => val.message);
             return NextResponse.json({ error: 'Erro de validação', details: messages }, { status: 400 });
         }
 

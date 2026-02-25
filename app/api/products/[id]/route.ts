@@ -14,7 +14,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
         }
 
         return NextResponse.json(produto);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Erro ao buscar produto' }, { status: 500 });
     }
 }
@@ -49,7 +49,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         });
 
         return NextResponse.json(produtoAtualizado);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Erro ao atualizar produto' }, { status: 500 });
     }
 }
@@ -79,7 +79,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
 
         await Produto.findByIdAndDelete(params.id);
         return NextResponse.json({ message: 'Produto removido com sucesso' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Erro ao deletar produto' }, { status: 500 });
     }
 }
@@ -109,7 +109,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         }
 
         return NextResponse.json(produto);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Erro ao atualizar produto' }, { status: 500 });
     }
 }

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         }
 
         // Buscar todos os produtos (aplicando filtros se existirem)
-        const query: any = {};
+        const query: Record<string, string | object> = {};
         if (categoria) query.categoria = categoria;
         if (maxPrice > 0) query.preco = { $lte: maxPrice };
 
