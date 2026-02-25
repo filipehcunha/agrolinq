@@ -12,6 +12,8 @@ export async function GET(request: Request) {
         const lat = parseFloat(searchParams.get('lat') || '0');
         const lng = parseFloat(searchParams.get('lng') || '0');
         const radius = parseFloat(searchParams.get('radius') || '50'); // default 50km
+        const categoria = searchParams.get('categoria');
+        const maxPrice = parseFloat(searchParams.get('maxPrice') || '0');
 
         if (!lat || !lng) {
             return NextResponse.json(
@@ -20,8 +22,12 @@ export async function GET(request: Request) {
             );
         }
 
-        // Buscar todos os produtos
-        const produtos = await Produto.find().lean();
+        // Buscar todos os produtos (aplicando filtros se existirem)
+        const query: any = {};
+        if (categoria) query.categoria = categoria;
+        if (maxPrice > 0) query.preco = { $lte: maxPrice };
+
+        const produtos = await Produto.find(query).lean();
 
         // Buscar todos os produtores com geolocalização
         const produtores = await Produtor.find({
@@ -41,9 +47,16 @@ export async function GET(request: Request) {
             ])
         );
 
-        // Filtrar produtos por raio
+        // Filtrar produtos por raio e enriquecer com seloVerde
+        // Primeiro precisamos saber quais produtores têm seloVerde
+        const seloVerdeMap = new Map(produtores.map(p => [p._id.toString(), p.seloVerde]));
+
         const produtosFiltrados = filtrarProdutosPorRaio(
-            produtos.map(p => ({ ...p, produtorId: p.produtorId.toString() })),
+            produtos.map(p => ({
+                ...p,
+                produtorId: p.produtorId.toString(),
+                seloVerde: seloVerdeMap.get(p.produtorId.toString()) || false
+            })),
             produtoresMap,
             lat,
             lng,
