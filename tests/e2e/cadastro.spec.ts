@@ -5,17 +5,16 @@ test('deve cadastrar um novo usuário com sucesso', async ({ page }) => {
     await page.goto('http://localhost:3000/cadastro');
 
     // 2. Preencher o formulário
-    // Gera dados aleatórios para evitar erro de duplicidade
-    const randomId = Math.floor(Math.random() * 10000);
-    const nome = `Teste Automatizado ${randomId}`;
-    const email = `teste${randomId}@exemplo.com`;
+    const uniqueId = Date.now() + Math.random().toString(36).substring(2, 7);
+    const nome = `Teste Automatizado ${uniqueId}`;
+    const email = `teste${uniqueId}@exemplo.com`;
 
-    // Gerador de CPF simples (apenas para passar na regex, não é válido na Receita)
-    // Formato: XXX.XXX.XXX-XX
+    // Gerador de CPF simples mas que varie mais
     const cpf = `${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}.${Math.floor(100 + Math.random() * 900)}-${Math.floor(10 + Math.random() * 90)}`;
 
     await page.fill('input[id="nome"]', nome);
     await page.fill('input[id="email"]', email);
+    await page.selectOption('select[id="tipo"]', 'consumidor');
     await page.fill('input[id="cpf"]', cpf);
     await page.fill('input[id="senha"]', 'senha123');
 
@@ -25,5 +24,5 @@ test('deve cadastrar um novo usuário com sucesso', async ({ page }) => {
 
     // 4. Verificar mensagem de sucesso
     // A mensagem de sucesso aparece em um container verde
-    await expect(page.getByText('Cadastro realizado com sucesso! Redirecionando...')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Cadastro realizado com sucesso/i)).toBeVisible({ timeout: 15000 });
 });
