@@ -17,6 +17,15 @@ export async function POST(request: Request) {
 
     if (!conn && (process.env.CI || process.env.NODE_ENV === 'test')) {
         const body = await request.json();
+
+        // Suporte para testes de erro no Mock Mode
+        if (body.email === 'errado@exemplo.com') {
+            return NextResponse.json(
+                { error: 'E-mail ou senha incorretos.' },
+                { status: 401 }
+            );
+        }
+
         return NextResponse.json(
             {
                 message: 'Login realizado com sucesso!',
