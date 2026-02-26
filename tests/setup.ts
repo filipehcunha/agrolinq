@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import { TextEncoder, TextDecoder } from 'util';
 
 // Mock TextEncoder/TextDecoder if needed (often needed for jsdom/mongoose)
 if (typeof global.TextEncoder === 'undefined') {
-    const { TextEncoder, TextDecoder } = require('util');
     global.TextEncoder = TextEncoder;
-    global.TextDecoder = TextDecoder;
+    global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 }
 
 // Mock localStorage
