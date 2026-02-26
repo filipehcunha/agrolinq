@@ -207,6 +207,14 @@ export default function DashboardPage() {
                             </span>
                         )}
                     </Link>
+                    {user?.tipo === 'restaurante' && (
+                        <Link href="/dashboard/restaurante/orcamentos" className="relative flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium transition-colors">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Orçamentos
+                        </Link>
+                    )}
                     <Link href="/dashboard/carrinho" className="relative flex items-center gap-2 text-gray-600 hover:text-green-600 font-medium transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -324,8 +332,11 @@ export default function DashboardPage() {
                                             </div>
                                             <h3 className="text-sm font-medium text-gray-500">Reposição Rápida</h3>
                                         </div>
-                                        <p className="text-lg font-bold text-gray-900 leading-tight">Acesse o catálogo focado em atacado</p>
-                                        <p className="text-xs text-gray-500 mt-2">Lista densa para facilitar compras recorrentes em grandes volumes.</p>
+                                        <p className="text-lg font-bold text-gray-900 leading-tight">Catálogo de Atacado & Orçamentos</p>
+                                        <p className="text-xs text-gray-400 mt-2">Peça cotações em lote e otimize seu estoque.</p>
+                                        <div className="mt-4 flex gap-2">
+                                            <span className="text-[10px] font-black uppercase text-green-600 bg-green-50 px-2 py-1 rounded">Novo: Orçamentos em Lote</span>
+                                        </div>
                                     </Link>
                                 ) : (
                                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 transition-all hover:shadow-md border-l-4 border-l-green-500">
