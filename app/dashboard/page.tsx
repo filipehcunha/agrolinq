@@ -102,6 +102,12 @@ export default function DashboardPage() {
     }, [ordenarProximidade, userLocation, categoriaFiltro, precoMaximo, error]);
 
     useEffect(() => {
+        if (!authLoading && !user) {
+            window.location.href = "/login";
+        }
+    }, [user, authLoading]);
+
+    useEffect(() => {
         fetchProdutos();
 
         if (user?.id) {
