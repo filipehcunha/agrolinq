@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import { formatCurrency, getAvatarInitials, getFallbackName } from "@/lib/formatters";
 
 interface Produto {
     _id: string;
@@ -226,9 +227,9 @@ export default function DashboardPage() {
                             </span>
                         )}
                     </Link>
-                    <span className="text-sm text-gray-600 hidden md:inline">Bem-vindo(a), <span className="font-semibold">{user?.nome || "Consumidor"}</span></span>
+                    <span className="text-sm text-gray-600 hidden md:inline">Bem-vindo(a), <span className="font-semibold">{getFallbackName(user?.nome, "Consumidor")}</span></span>
                     <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold border-2 border-green-200 shadow-inner">
-                        {user?.nome ? user.nome.charAt(0).toUpperCase() : "C"}
+                        {getAvatarInitials(user?.nome || "")}
                     </div>
                 </div>
             </header>
@@ -477,7 +478,7 @@ export default function DashboardPage() {
                                                             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                                                                 <div>
                                                                     <p className="text-xs text-gray-500">Preço por {produto.unidade}</p>
-                                                                    <p className="text-xl font-bold text-green-600">R$ {produto.preco.toFixed(2)}</p>
+                                                                    <p className="text-xl font-bold text-green-600">{formatCurrency(produto.preco)}</p>
                                                                 </div>
                                                                 <button
                                                                     onClick={(e) => {
